@@ -9,9 +9,17 @@ export interface FinancialMetrics {
   ebitda: number;
 }
 
+export interface LTMMetrics extends FinancialMetrics {
+  calculatedFrom: {
+    startDate: string;
+    endDate: string;
+  };
+}
+
 export interface HistoricalData {
   year: number;
   metrics: FinancialMetrics;
+  ltm?: LTMMetrics;
 }
 
 export interface ProjectionData {
@@ -43,6 +51,7 @@ export interface FinancingDetails {
   stockComponent: number;
   interestRate: number;
   termYears: number;
+  discountRate: number;
 }
 
 export interface AnalysisFormData {
@@ -66,12 +75,18 @@ export interface ReturnMetrics {
   paybackPeriod: PaybackPeriodResult;
 }
 
+export interface DebtServiceResult {
+  // Assuming this interface is defined elsewhere, if not, define it here
+}
+
 export interface AnalysisResults {
   valuation: number;
+  enterpriseValue: number;
+  ltmEbitda: number;
   firstYearEbitda: number;
   projectedEbitda: number[];
   cashFlowGeneration: number[];
-  debtService: number[];
+  debtService: DebtServiceResult;
   netCashPosition: number;
   debtComponent: number;
   cashConversionRate: number;
@@ -81,10 +96,13 @@ export interface AnalysisResults {
     exitMultiple: number;
     equityComponent: number;
     debtComponent: number;
+    multiplePaid: number;
+    discountRate: number;
   };
   riskMetrics: {
     debtServiceCoverage: number;
     interestCoverage: number;
-    leverageRatio: number;
+    debtToEbitda: number;
   };
+  npv: number;
 }

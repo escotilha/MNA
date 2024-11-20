@@ -90,8 +90,9 @@ function App() {
     financingDetails: {
       cashComponent: 50,
       stockComponent: 50,
-      interestRate: 5,
+      interestRate: 18,
       termYears: 5,
+      discountRate: 10,
     },
   });
 
@@ -99,17 +100,35 @@ function App() {
 
   const calculateResults = () => {
     try {
-      const firstHistoricalEbitda = formData.historicalData[0].metrics.ebitda;
-      if (firstHistoricalEbitda <= 0) {
-        throw new Error("EBITDA must be positive to calculate meaningful returns");
+      // Get LTM EBITDA from the last historical year
+      const lastHistoricalData = formData.historicalData[formData.historicalData.length - 1];
+      const ltmEbitda = lastHistoricalData.metrics.ebitda;
+      console.log('Using LTM EBITDA for calculation:', ltmEbitda);
+      
+      // Validate LTM EBITDA value
+      if (!ltmEbitda || ltmEbitda <= 0) {
+        throw new Error("LTM EBITDA must be positive to calculate meaningful returns");
       }
 
-      const valuation = calculateValuation(firstHistoricalEbitda, formData.dealStructure.multiplePaid);
+      if (isNaN(ltmEbitda)) {
+        throw new Error("LTM EBITDA must be a valid number");
+      }
+
+      const valuation = calculateValuation(ltmEbitda, formData.dealStructure.multiplePaid);
+      console.log('Valuation calculation:', {
+        ltmEbitda,
+        multiplePaid: formData.dealStructure.multiplePaid,
+        calculatedValuation: valuation
+      });
+      
       if (valuation <= 0) {
         throw new Error("Valuation must be positive");
       }
+
+      // Calculate enterprise value (same as valuation in this case)
+      const enterpriseValue = valuation;
       
-      const debtAmount = firstHistoricalEbitda * formData.dealStructure.multiplePaid * (formData.financingDetails.cashComponent / 100);
+      const debtAmount = enterpriseValue * (formData.financingDetails.cashComponent / 100);
       const debtService = calculateDebtService(
         debtAmount,
         formData.financingDetails.interestRate,
@@ -133,12 +152,12 @@ function App() {
         return netCf;
       });
       
-      const exitValue = formData.projectionData[3].metrics.ebitda * formData.dealStructure.exitMultiple;
+      const exitValue = formData.projectionData[formData.projectionData.length - 1].metrics.ebitda * formData.dealStructure.exitMultiple;
       if (exitValue <= 0) {
         throw new Error("Exit value must be positive");
       }
 
-      const totalCashFlows = [-valuation, ...cashFlowGeneration, exitValue];
+      const totalCashFlows = [-enterpriseValue, ...cashFlowGeneration, exitValue];
       
       const irr = calculateIRR(totalCashFlows);
       if (isNaN(irr)) {
@@ -146,7 +165,7 @@ function App() {
       }
 
       const totalReturn = exitValue + cashFlowGeneration.reduce((a, b) => a + b, 0);
-      const moic = calculateMOIC(totalReturn, valuation);
+      const moic = calculateMOIC(totalReturn, enterpriseValue);
       if (isNaN(moic)) {
         throw new Error("Could not calculate MOIC - please check your return and investment values");
       }
@@ -156,6 +175,7 @@ function App() {
       
       const results: AnalysisResults = {
         valuation,
+        enterpriseValue,
         debtService,
         cashFlowGeneration,
         netCashPosition: cashFlowGeneration.reduce((a, b) => a + b, 0),
@@ -164,7 +184,8 @@ function App() {
           moic,
           paybackPeriod,
         },
-        firstYearEbitda: firstHistoricalEbitda,
+        ltmEbitda,
+        firstYearEbitda: formData.projectionData[0].metrics.ebitda,
         debtComponent: formData.financingDetails.cashComponent,
         projectedEbitda: formData.projectionData.map(year => year.metrics.ebitda),
         cashConversionRate: formData.kpis.cashConversionRate,
@@ -173,13 +194,26 @@ function App() {
           exitMultiple: formData.dealStructure.exitMultiple,
           equityComponent,
           debtComponent: formData.financingDetails.cashComponent,
+          multiplePaid: formData.dealStructure.multiplePaid,
+          discountRate: formData.financingDetails.discountRate,
         },
         riskMetrics: {
-          debtServiceCoverage: debtService.yearlyPayments[0] ? cashFlowGeneration[0] / debtService.yearlyPayments[0] : Infinity,
-          interestCoverage: debtService.yearlyPayments[0] ? firstHistoricalEbitda / (debtService.yearlyPayments[0] * 0.7) : Infinity,
-          leverageRatio: (valuation * formData.financingDetails.cashComponent / 100) / firstHistoricalEbitda,
+          debtServiceCoverage: cashFlowGeneration[0] / (debtService.yearlyPayments[0] || 1),
+          interestCoverage: ltmEbitda / (debtService.totalInterest / formData.financingDetails.termYears || 1),
+          debtToEbitda: debtAmount / ltmEbitda,
         },
+        npv: totalCashFlows.reduce((acc, cf, i) => 
+          acc + cf / Math.pow(1 + formData.financingDetails.discountRate / 100, i), 0)
       };
+
+      // Debug log the final results
+      console.log('Final results:', {
+        ltmEbitda,
+        enterpriseValue,
+        multiple: formData.dealStructure.multiplePaid,
+        calculatedValuation: valuation,
+        fullResults: results
+      });
 
       setResults(results);
       setShowResults(true);

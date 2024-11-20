@@ -18,6 +18,7 @@ const colors = {
 
 // Utility functions
 const formatCurrency = (value: number): string => {
+  if (typeof value !== 'number' || isNaN(value)) return '$0';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -27,15 +28,23 @@ const formatCurrency = (value: number): string => {
 };
 
 const formatMillions = (value: number): string => {
-  return `$${(value / 1000000).toFixed(1)}M`;
+  if (typeof value !== 'number' || isNaN(value)) return '$0M';
+  const millions = value / 1000000;
+  if (millions < 1) {
+    return `$${(value / 1000).toFixed(1)}K`;
+  }
+  return `$${millions.toFixed(1)}M`;
 };
 
 const formatPercent = (value: number): string => {
+  if (typeof value !== 'number' || isNaN(value)) return '0%';
+  // Convert decimal to percentage (e.g., 0.15 to 15%)
+  const percentage = value < 1 ? value * 100 : value;
   return new Intl.NumberFormat('en-US', {
     style: 'percent',
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
-  }).format(value);
+  }).format(percentage / 100);
 };
 
 export const generatePDFReport = (

@@ -66,9 +66,9 @@ export function SensitivityAnalysis({ results }: Props) {
           <div>
             <h4 className="text-lg font-medium text-gray-700 mb-4">Key Metrics</h4>
             <ul className="space-y-2 text-gray-600">
-              <li>• Base Valuation: ${(baseValuation / 1000000).toFixed(1)}M</li>
+              <li>• Base Valuation: ${(baseValuation / 1000).toFixed(1)}M</li>
               <li>• Exit Multiple: {baseMultiple.toFixed(1)}x</li>
-              <li>• Base EBITDA: ${(baseEBITDA / 1000000).toFixed(1)}M</li>
+              <li>• Base EBITDA: ${(baseEBITDA / 1000).toFixed(1)}M</li>
               <li>• Base IRR: {baseIRR.toFixed(1)}%</li>
             </ul>
           </div>

@@ -25,10 +25,20 @@ export function DealStructureForm({ data, onChange }: Props) {
           <input
             type="number"
             step="0.1"
-            value={data.multiplePaid}
-            onChange={(e) => onChange({ ...data, multiplePaid: parseFloat(e.target.value) })}
+            min="0.1"
+            placeholder="Enter multiple (e.g., 5.0)"
+            value={data.multiplePaid || ''}
+            onChange={(e) => {
+              const value = parseFloat(e.target.value);
+              if (!isNaN(value) && value > 0) {
+                onChange({ ...data, multiplePaid: value });
+              }
+            }}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
+          <p className="mt-1 text-sm text-gray-500">
+            Enterprise Value = LTM EBITDA × Multiple Paid
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Exit Multiple</label>
