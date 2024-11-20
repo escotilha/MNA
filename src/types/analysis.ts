@@ -27,8 +27,9 @@ export interface KPIs {
 }
 
 export interface AcquisitionSchedule {
-  year: number;
-  percentage: number;
+  date: string;
+  milestone: string;
+  amount: number;
 }
 
 export interface DealStructure {
@@ -53,20 +54,29 @@ export interface AnalysisFormData {
   financingDetails: FinancingDetails;
 }
 
-export interface ReturnMetrics {
-  irr: number;
-  moic: number;
-}
-
 export interface AnalysisResults {
   valuation: number;
-  debtService: number[];
-  cashFlowGeneration: number[];
-  netCashPosition: number;
-  returnMetrics: ReturnMetrics;
-  firstYearEbitda?: number;
-  debtComponent?: number;
+  firstYearEbitda: number;
   projectedEbitda: number[];
+  cashFlowGeneration: number[];
+  debtService: number[];
+  netCashPosition: number;
+  debtComponent: number;
   cashConversionRate: number;
   acquisitionSchedule: AcquisitionSchedule[];
+  returnMetrics: {
+    irr: number;
+    moic: number;
+    paybackPeriod: number;
+  };
+  dealStructure: {
+    exitMultiple: number;
+    equityComponent: number;
+    debtComponent: number;
+  };
+  riskMetrics: {
+    debtServiceCoverage: number;
+    interestCoverage: number;
+    leverageRatio: number;
+  };
 }

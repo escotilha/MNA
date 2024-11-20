@@ -54,3 +54,30 @@ export function calculateIRR(cashFlows: number[]): number {
 export function calculateMOIC(totalReturn: number, initialInvestment: number): number {
   return totalReturn / initialInvestment;
 }
+
+export function calculatePaybackPeriod(cashFlows: number[]): number {
+  let cumulativeCashFlow = cashFlows[0]; // Initial investment (negative)
+  let years = 0;
+  
+  for (let i = 1; i < cashFlows.length; i++) {
+    if (cumulativeCashFlow >= 0) {
+      break;
+    }
+    cumulativeCashFlow += cashFlows[i];
+    years = i;
+  }
+  
+  // If we haven't reached positive cash flow by the last period
+  if (cumulativeCashFlow < 0) {
+    return cashFlows.length;
+  }
+  
+  // Add fraction of the year if we crossed zero during a year
+  if (years > 0 && cumulativeCashFlow > 0) {
+    const previousYearFlow = cumulativeCashFlow - cashFlows[years];
+    const fraction = Math.abs(previousYearFlow) / cashFlows[years];
+    years = years - 1 + fraction;
+  }
+  
+  return years;
+}

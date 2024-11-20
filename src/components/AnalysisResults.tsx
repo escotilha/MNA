@@ -1,144 +1,173 @@
-import React, { useState } from 'react';
-import { AnalysisResults } from '../types/analysis';
-import { ReportView } from './ReportView';
-import { LayoutDashboard, FileText } from 'lucide-react';
+import React from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AnalysisResults, AnalysisFormData } from '../types/analysis';
+import { SensitivityAnalysis } from './SensitivityAnalysis';
+import { ConsultingRecommendation } from './ConsultingRecommendation';
+import { generatePDFReport } from './PDFReport';
+import { FileDown } from 'lucide-react';
 
 interface Props {
   results: AnalysisResults;
+  formData: AnalysisFormData;
 }
 
-export function AnalysisResultsView({ results }: Props) {
-  const [view, setView] = useState<'detailed' | 'report'>('detailed');
-  
-  const calculateTotalPayment = (index: number): number => {
-    return results.debtService.slice(0, index + 1).reduce((sum, payment) => sum + payment, 0);
+export function AnalysisResultsView({ results, formData }: Props) {
+  if (!results) {
+    return (
+      <div className="bg-white/90 backdrop-blur-glass shadow-glass rounded-xl p-6">
+        <p className="text-red-600">Error: No results available to display.</p>
+      </div>
+    );
+  }
+
+  const handleExportPDF = () => {
+    try {
+      // Log the data being passed to PDF generation
+      console.log('PDF Generation Input Data:', {
+        results,
+        formData
+      });
+      
+      if (!results) {
+        throw new Error('Analysis results are undefined');
+      }
+      
+      if (!formData) {
+        throw new Error('Form data is required');
+      }
+
+      generatePDFReport(results, formData);
+    } catch (error) {
+      console.error('Failed to generate PDF report:', error);
+      // Show error to user
+      alert('Failed to generate PDF report: ' + (error as Error).message);
+    }
   };
 
-  const calculateCumulative = (index: number): number => {
-    return results.acquisitionSchedule
-      .slice(0, index + 1)
-      .reduce((sum, item) => sum + item.percentage, 0);
-  };
-
-  const calculateCashPaid = (ebitda: number, percentage: number): number => {
-    return ebitda * results.valuation * (percentage / 100);
-  };
-
-  const loanAmount = (results.firstYearEbitda || 0) * 6 * (results.debtComponent || 0) / 100;
+  const cashFlowData = results.cashFlowGeneration?.map((cf, index) => ({
+    year: `Year ${index + 1}`,
+    cashFlow: cf / 1000000, // Convert to millions
+    debtService: (results.debtService?.[index] || 0) / 1000000, // Convert to millions
+  })) || [];
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-center space-x-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white">Analysis Results</h2>
         <button
-          onClick={() => setView('detailed')}
-          className={`inline-flex items-center px-6 py-3 rounded-xl shadow-glass transition-all duration-200 ${
-            view === 'detailed'
-              ? 'bg-primary text-white'
-              : 'bg-white/50 text-primary hover:bg-white/80'
-          }`}
+          onClick={handleExportPDF}
+          className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
         >
-          <LayoutDashboard className="mr-2 h-5 w-5" />
-          Detailed View
-        </button>
-        <button
-          onClick={() => setView('report')}
-          className={`inline-flex items-center px-6 py-3 rounded-xl shadow-glass transition-all duration-200 ${
-            view === 'report'
-              ? 'bg-primary text-white'
-              : 'bg-white/50 text-primary hover:bg-white/80'
-          }`}
-        >
-          <FileText className="mr-2 h-5 w-5" />
-          Report View
+          <FileDown className="mr-2 h-5 w-5" />
+          Export PDF Report
         </button>
       </div>
 
-      {view === 'detailed' ? (
-        <>
-          <div className="bg-white/90 backdrop-blur-glass shadow-glass rounded-xl p-8">
-            <h2 className="text-2xl font-bold text-primary mb-6">Analysis Results</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-br from-primary to-primary-medium p-6 rounded-xl shadow-glass">
-                <h3 className="text-lg font-semibold text-white/90">Valuation</h3>
-                <p className="text-3xl font-bold text-white mt-2">${results.valuation.toLocaleString()}</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-primary-medium to-primary-light p-6 rounded-xl shadow-glass">
-                <h3 className="text-lg font-semibold text-white/90">Loan Amount</h3>
-                <p className="text-3xl font-bold text-white mt-2">${loanAmount.toLocaleString()}</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-primary to-primary-medium p-6 rounded-xl shadow-glass">
-                <h3 className="text-lg font-semibold text-white/90">IRR</h3>
-                <p className="text-3xl font-bold text-white mt-2">{(results.returnMetrics.irr * 100).toFixed(1)}%</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-primary-medium to-primary-light p-6 rounded-xl shadow-glass">
-                <h3 className="text-lg font-semibold text-white/90">MOIC</h3>
-                <p className="text-3xl font-bold text-white mt-2">{results.returnMetrics.moic.toFixed(2)}x</p>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white/90 backdrop-blur-glass shadow-glass rounded-xl p-6">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Valuation Overview</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Enterprise Value</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ${((results.valuation || 0) / 1000000).toFixed(2)}M
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">First Year EBITDA</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ${((results.firstYearEbitda || 0) / 1000000).toFixed(2)}M
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">IRR</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {(results.returnMetrics?.irr || 0).toFixed(2)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">MOIC</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {(results.returnMetrics?.moic || 0).toFixed(2)}x
+              </p>
             </div>
           </div>
+        </div>
 
-          <div className="bg-white/90 backdrop-blur-glass shadow-glass rounded-xl p-8">
-            <h3 className="text-xl font-semibold text-primary mb-6">Cash Flow and Acquisition Analysis</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr className="bg-gradient-to-r from-primary to-primary-medium">
-                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Year</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Acquisition %</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Cumulative %</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">EBITDA</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Cash Flow ({results.cashConversionRate}% of EBITDA)</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Debt Service</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Cash Paid</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Payment Made</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {results.cashFlowGeneration.map((cashFlow, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Year {index + 1}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {results.acquisitionSchedule[index].percentage}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {calculateCumulative(index)}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${results.projectedEbitda[index].toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${(results.projectedEbitda[index] * results.cashConversionRate / 100).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${results.debtService[index].toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${calculateCashPaid(results.projectedEbitda[index], results.acquisitionSchedule[index].percentage).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${calculateTotalPayment(index).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <div className="bg-white/90 backdrop-blur-glass shadow-glass rounded-xl p-6">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Cash Flow Analysis</h3>
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={cashFlowData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="year" />
+                <YAxis />
+                <Tooltip />
+                <Area
+                  type="monotone"
+                  dataKey="cashFlow"
+                  stackId="1"
+                  stroke="#0071E0"
+                  fill="#0071E0"
+                  name="Cash Flow"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="debtService"
+                  stackId="2"
+                  stroke="#FF4444"
+                  fill="#FF4444"
+                  name="Debt Service"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
+        </div>
+      </div>
 
-          <div className="bg-white/90 backdrop-blur-glass shadow-glass rounded-xl p-8">
-            <h3 className="text-xl font-semibold text-primary mb-4">Net Cash Position</h3>
-            <div className="bg-gradient-to-r from-primary to-primary-medium p-6 rounded-xl">
-              <p className="text-2xl font-bold text-white">${results.netCashPosition.toLocaleString()}</p>
-            </div>
+      <div className="space-y-8">
+        <SensitivityAnalysis results={results} />
+        
+        <ConsultingRecommendation 
+          results={results}
+          companyName={formData.companyOverview.projectName}
+          industry={formData.companyOverview.industry}
+        />
+      </div>
+
+      <div className="bg-white/90 backdrop-blur-glass shadow-glass rounded-xl p-6">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Deal Structure</h3>
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-600">Debt Component</p>
+            <p className="text-xl font-semibold text-gray-900">{results.debtComponent || 0}%</p>
           </div>
-        </>
-      ) : (
-        <ReportView results={results} />
-      )}
+          <div>
+            <p className="text-sm text-gray-600">Cash Conversion Rate</p>
+            <p className="text-xl font-semibold text-gray-900">{results.cashConversionRate || 0}%</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Net Cash Position</p>
+            <p className="text-xl font-semibold text-gray-900">
+              ${((results.netCashPosition || 0) / 1000000).toFixed(2)}M
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white/90 backdrop-blur-glass shadow-glass rounded-xl p-6">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Acquisition Schedule</h3>
+          <div className="space-y-2">
+            {(results.acquisitionSchedule || []).map((schedule, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <span className="text-gray-600">Year {schedule.year}</span>
+                <span className="text-gray-900 font-semibold">{schedule.percentage}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { DealStructureForm } from './components/DealStructureForm';
 import { FinancingDetailsForm } from './components/FinancingDetailsForm';
 import { AnalysisResultsView } from './components/AnalysisResults';
 import { AnalysisFormData, AnalysisResults } from './types/analysis';
-import { calculateValuation, calculateDebtService, calculateIRR, calculateMOIC } from './utils/calculations';
+import { calculateValuation, calculateDebtService, calculateIRR, calculateMOIC, calculatePaybackPeriod } from './utils/calculations';
 
 function App() {
   const currentYear = new Date().getFullYear();
@@ -37,6 +37,7 @@ function App() {
       projectName: '',
       yearFounded: 2020,
       location: '',
+      industry: '',
     },
     historicalData,
     projectionData,
@@ -67,45 +68,94 @@ function App() {
   const [results, setResults] = useState<AnalysisResults | null>(null);
 
   const calculateResults = () => {
-    const firstHistoricalEbitda = formData.historicalData[0].metrics.ebitda;
-    const valuation = calculateValuation(firstHistoricalEbitda, formData.dealStructure.multiplePaid);
-    
-    const debtAmount = firstHistoricalEbitda * formData.dealStructure.multiplePaid * (formData.financingDetails.cashComponent / 100);
-    const debtService = calculateDebtService(
-      debtAmount,
-      formData.financingDetails.interestRate,
-      formData.financingDetails.termYears
-    );
+    try {
+      const firstHistoricalEbitda = formData.historicalData[0].metrics.ebitda;
+      if (firstHistoricalEbitda <= 0) {
+        throw new Error("EBITDA must be positive to calculate meaningful returns");
+      }
 
-    const projectedCashFlows = formData.projectionData.map(year => 
-      year.metrics.ebitda * (formData.kpis.cashConversionRate / 100)
-    );
-    const cashFlowGeneration = projectedCashFlows.map((cf, i) => cf - debtService[i]);
-    
-    const exitValue = formData.projectionData[3].metrics.ebitda * formData.dealStructure.exitMultiple;
-    const totalCashFlows = [-valuation, ...cashFlowGeneration, exitValue];
-    
-    const irr = calculateIRR(totalCashFlows);
-    const moic = calculateMOIC(exitValue + cashFlowGeneration.reduce((a, b) => a + b, 0), valuation);
+      const valuation = calculateValuation(firstHistoricalEbitda, formData.dealStructure.multiplePaid);
+      if (valuation <= 0) {
+        throw new Error("Valuation must be positive");
+      }
+      
+      const debtAmount = firstHistoricalEbitda * formData.dealStructure.multiplePaid * (formData.financingDetails.cashComponent / 100);
+      const debtService = calculateDebtService(
+        debtAmount,
+        formData.financingDetails.interestRate,
+        formData.financingDetails.termYears
+      );
 
-    const results: AnalysisResults = {
-      valuation,
-      debtService,
-      cashFlowGeneration,
-      netCashPosition: cashFlowGeneration.reduce((a, b) => a + b, 0),
-      returnMetrics: {
-        irr,
-        moic,
-      },
-      firstYearEbitda: firstHistoricalEbitda,
-      debtComponent: formData.financingDetails.cashComponent,
-      projectedEbitda: formData.projectionData.map(year => year.metrics.ebitda),
-      cashConversionRate: formData.kpis.cashConversionRate,
-      acquisitionSchedule: formData.dealStructure.acquisitionSchedule,
-    };
+      const projectedCashFlows = formData.projectionData.map(year => {
+        const cf = year.metrics.ebitda * (formData.kpis.cashConversionRate / 100);
+        if (isNaN(cf)) {
+          throw new Error("Invalid cash flow calculation");
+        }
+        return cf;
+      });
+      
+      const cashFlowGeneration = projectedCashFlows.map((cf, i) => {
+        const netCf = cf - debtService[i];
+        if (isNaN(netCf)) {
+          throw new Error("Invalid net cash flow calculation");
+        }
+        return netCf;
+      });
+      
+      const exitValue = formData.projectionData[3].metrics.ebitda * formData.dealStructure.exitMultiple;
+      if (exitValue <= 0) {
+        throw new Error("Exit value must be positive");
+      }
 
-    setResults(results);
-    setShowResults(true);
+      const totalCashFlows = [-valuation, ...cashFlowGeneration, exitValue];
+      
+      const irr = calculateIRR(totalCashFlows);
+      if (isNaN(irr)) {
+        throw new Error("Could not calculate IRR - please check your cash flow projections");
+      }
+
+      const totalReturn = exitValue + cashFlowGeneration.reduce((a, b) => a + b, 0);
+      const moic = calculateMOIC(totalReturn, valuation);
+      if (isNaN(moic)) {
+        throw new Error("Could not calculate MOIC - please check your return and investment values");
+      }
+
+      const paybackPeriod = calculatePaybackPeriod(totalCashFlows);
+      const equityComponent = 100 - formData.financingDetails.cashComponent;
+      
+      const results: AnalysisResults = {
+        valuation,
+        debtService,
+        cashFlowGeneration,
+        netCashPosition: cashFlowGeneration.reduce((a, b) => a + b, 0),
+        returnMetrics: {
+          irr,
+          moic,
+          paybackPeriod,
+        },
+        firstYearEbitda: firstHistoricalEbitda,
+        debtComponent: formData.financingDetails.cashComponent,
+        projectedEbitda: formData.projectionData.map(year => year.metrics.ebitda),
+        cashConversionRate: formData.kpis.cashConversionRate,
+        acquisitionSchedule: formData.dealStructure.acquisitionSchedule,
+        dealStructure: {
+          exitMultiple: formData.dealStructure.exitMultiple,
+          equityComponent,
+          debtComponent: formData.financingDetails.cashComponent,
+        },
+        riskMetrics: {
+          debtServiceCoverage: debtService[0] ? cashFlowGeneration[0] / debtService[0] : Infinity,
+          interestCoverage: debtService[0] ? firstHistoricalEbitda / (debtService[0] * 0.7) : Infinity,
+          leverageRatio: (valuation * formData.financingDetails.cashComponent / 100) / firstHistoricalEbitda,
+        },
+      };
+
+      setResults(results);
+      setShowResults(true);
+    } catch (error) {
+      alert(`Error calculating returns: ${error.message}`);
+      console.error('Calculation error:', error);
+    }
   };
 
   return (
@@ -172,7 +222,12 @@ function App() {
             >
               ← Back to Form
             </button>
-            {results && <AnalysisResultsView results={results} />}
+            {results && (
+              <AnalysisResultsView
+                results={results}
+                formData={formData}
+              />
+            )}
           </div>
         )}
       </main>
