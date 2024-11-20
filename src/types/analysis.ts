@@ -54,6 +54,18 @@ export interface AnalysisFormData {
   financingDetails: FinancingDetails;
 }
 
+export interface PaybackPeriodResult {
+  years: number;
+  isAchieved: boolean;
+  remainingBalance?: number;
+}
+
+export interface ReturnMetrics {
+  irr: number;
+  moic: number;
+  paybackPeriod: PaybackPeriodResult;
+}
+
 export interface AnalysisResults {
   valuation: number;
   firstYearEbitda: number;
@@ -64,11 +76,7 @@ export interface AnalysisResults {
   debtComponent: number;
   cashConversionRate: number;
   acquisitionSchedule: AcquisitionSchedule[];
-  returnMetrics: {
-    irr: number;
-    moic: number;
-    paybackPeriod: number;
-  };
+  returnMetrics: ReturnMetrics;
   dealStructure: {
     exitMultiple: number;
     equityComponent: number;

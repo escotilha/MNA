@@ -140,7 +140,12 @@ export const generatePDFReport = (
     yPos = addBulletPoint(`Enterprise Value: ${formatMillions(results.valuation)}`, yPos);
     yPos = addBulletPoint(`Strong financial performance with EBITDA of ${formatMillions(results.firstYearEbitda)}`, yPos);
     yPos = addBulletPoint(`Attractive returns with IRR of ${formatPercent(results.returnMetrics.irr)} and MOIC of ${results.returnMetrics.moic.toFixed(2)}x`, yPos);
-    yPos = addBulletPoint(`Payback period of ${results.returnMetrics.paybackPeriod.toFixed(1)} years`, yPos);
+    yPos = addBulletPoint(
+      results.returnMetrics.paybackPeriod.isAchieved
+        ? `Payback period of ${results.returnMetrics.paybackPeriod.years.toFixed(1)} years`
+        : `Payback period extends beyond projection period (>${results.returnMetrics.paybackPeriod.years.toFixed(1)} years)`,
+      yPos
+    );
 
     yPos = addSubsection("Critical Risks and Mitigation Strategies", yPos + 15);
     yPos = addBulletPoint(`Financial Risk: Debt service coverage ratio of ${results.riskMetrics.debtServiceCoverage.toFixed(2)}x with mitigation through structured payment schedule`, yPos);

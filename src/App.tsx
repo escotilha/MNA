@@ -16,6 +16,36 @@ function App() {
   const initialEBITDA = 300;
   const growthRate = 1.3;
 
+  // Greek letter names with pronunciations
+  const greekLetters = [
+    'Alpha (AL-fuh)',
+    'Beta (BAY-tuh)',
+    'Gamma (GAM-uh)',
+    'Delta (DEL-tuh)',
+    'Epsilon (EP-si-lon)',
+    'Zeta (ZAY-tuh)',
+    'Eta (AY-tuh)',
+    'Theta (THAY-tuh)',
+    'Iota (eye-OH-tuh)',
+    'Kappa (KAP-uh)',
+    'Lambda (LAM-duh)',
+    'Mu (myoo)',
+    'Nu (noo)',
+    'Xi (KSEE)',
+    'Omicron (OM-i-kron)',
+    'Pi (pie)',
+    'Rho (row)',
+    'Sigma (SIG-muh)',
+    'Tau (taw)',
+    'Upsilon (OOP-si-lon)',
+    'Phi (fie)',
+    'Chi (kai)',
+    'Psi (sigh)',
+    'Omega (oh-MAY-guh)'
+  ];
+
+  const randomGreekLetter = greekLetters[Math.floor(Math.random() * greekLetters.length)];
+
   const historicalData = Array.from({ length: 3 }, (_, i) => ({
     year: currentYear - (3 - i),
     metrics: {
@@ -34,9 +64,9 @@ function App() {
 
   const [formData, setFormData] = useState<AnalysisFormData>({
     companyOverview: {
-      projectName: '',
+      projectName: `Project ${randomGreekLetter}`,
       yearFounded: 2020,
-      location: '',
+      location: 'São Paulo',
       industry: '',
     },
     historicalData,
@@ -95,7 +125,8 @@ function App() {
       });
       
       const cashFlowGeneration = projectedCashFlows.map((cf, i) => {
-        const netCf = cf - debtService[i];
+        const yearlyDebtService = i < debtService.yearlyPayments.length ? debtService.yearlyPayments[i] : 0;
+        const netCf = cf - yearlyDebtService;
         if (isNaN(netCf)) {
           throw new Error("Invalid net cash flow calculation");
         }
@@ -144,8 +175,8 @@ function App() {
           debtComponent: formData.financingDetails.cashComponent,
         },
         riskMetrics: {
-          debtServiceCoverage: debtService[0] ? cashFlowGeneration[0] / debtService[0] : Infinity,
-          interestCoverage: debtService[0] ? firstHistoricalEbitda / (debtService[0] * 0.7) : Infinity,
+          debtServiceCoverage: debtService.yearlyPayments[0] ? cashFlowGeneration[0] / debtService.yearlyPayments[0] : Infinity,
+          interestCoverage: debtService.yearlyPayments[0] ? firstHistoricalEbitda / (debtService.yearlyPayments[0] * 0.7) : Infinity,
           leverageRatio: (valuation * formData.financingDetails.cashComponent / 100) / firstHistoricalEbitda,
         },
       };
