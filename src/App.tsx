@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './styles/print.css';
 import { Building2, Calculator } from 'lucide-react';
 import { CompanyOverviewForm } from './components/CompanyOverviewForm';
 import { FinancialDataForm } from './components/FinancialDataForm';

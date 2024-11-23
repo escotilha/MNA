@@ -3,7 +3,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AnalysisResults, AnalysisFormData } from '../types/analysis';
 import { SensitivityAnalysis } from './SensitivityAnalysis';
 import { ConsultingRecommendation } from './ConsultingRecommendation';
-import { generatePDFReport } from './PDFReport';
 import { FileDown } from 'lucide-react';
 
 interface Props {
@@ -41,27 +40,12 @@ export function AnalysisResultsView({ results, formData }: Props) {
     return `$${inMillions.toFixed(2)}M`;
   };
 
-  const handleExportPDF = () => {
+  const handlePrintReport = () => {
     try {
-      // Log the data being passed to PDF generation
-      console.log('PDF Generation Input Data:', {
-        results,
-        formData
-      });
-      
-      if (!results) {
-        throw new Error('Analysis results are undefined');
-      }
-      
-      if (!formData) {
-        throw new Error('Form data is required');
-      }
-
-      generatePDFReport(results, formData);
+      window.print();
     } catch (error) {
-      console.error('Failed to generate PDF report:', error);
-      // Show error to user
-      alert('Failed to generate PDF report: ' + (error as Error).message);
+      console.error('Failed to print report:', error);
+      alert('Failed to print report: ' + (error as Error).message);
     }
   };
 
@@ -70,11 +54,11 @@ export function AnalysisResultsView({ results, formData }: Props) {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white">Analysis Results</h2>
         <button
-          onClick={handleExportPDF}
+          onClick={handlePrintReport}
           className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
         >
           <FileDown className="mr-2 h-5 w-5" />
-          Export PDF Report
+          Print PDF Report
         </button>
       </div>
 

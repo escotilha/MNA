@@ -1,0 +1,68 @@
+@media print {
+  /* Hide non-printable elements */
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset background colors and shadows for better printing */
+  body {
+    background: white !important;
+  }
+
+  .bg-white\/90,
+  .backdrop-blur-glass,
+  .shadow-glass {
+    background: white !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure text is readable when printed */
+  * {
+    color: black !important;
+    text-shadow: none !important;
+  }
+
+  /* Adjust layout for printing */
+  .space-y-6 {
+    margin-top: 1rem !important;
+  }
+
+  /* Format charts and graphs */
+  .recharts-wrapper {
+    page-break-inside: avoid;
+  }
+
+  /* Add page breaks before major sections */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  /* Ensure tables fit on pages */
+  table {
+    page-break-inside: avoid;
+  }
+
+  /* Reset text colors for better contrast when printing */
+  .text-white,
+  .text-gray-600,
+  .text-gray-500 {
+    color: black !important;
+  }
+
+  /* Adjust margins and padding */
+  .p-6,
+  .p-4 {
+    padding: 1rem !important;
+  }
+
+  /* Ensure grid layouts print properly */
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    margin-bottom: 1rem !important;
+  }
+}
