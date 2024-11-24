@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './styles/print.css';
 import { Building2, Calculator } from 'lucide-react';
 import { CompanyOverviewForm } from './components/CompanyOverviewForm';
@@ -82,10 +82,10 @@ function App() {
       multiplePaid: 6,
       exitMultiple: 12,
       acquisitionSchedule: [
-        { year: 1, percentage: 55 },
-        { year: 2, percentage: 15 },
-        { year: 3, percentage: 15 },
-        { year: 4, percentage: 15 },
+        { date: '2024', percentage: 55 },
+        { date: '2025', percentage: 15 },
+        { date: '2026', percentage: 15 },
+        { date: '2027', percentage: 15 },
       ],
     },
     financingDetails: {
@@ -219,8 +219,8 @@ function App() {
       setResults(results);
       setShowResults(true);
     } catch (error) {
-      alert(`Error calculating returns: ${error.message}`);
-      console.error('Calculation error:', error);
+      console.error('Error in calculation:', error instanceof Error ? error.message : String(error));
+      return null;
     }
   };
 

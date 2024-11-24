@@ -1,16 +1,8 @@
-import React from 'react';
 import { CompanyOverview } from '../types/analysis';
 
 interface Props {
   data: CompanyOverview;
   onChange: (data: CompanyOverview) => void;
-}
-
-interface CompanyOverview {
-  projectName: string;
-  yearFounded: number;
-  location: string;
-  industry: string;
 }
 
 export function CompanyOverviewForm({ data, onChange }: Props) {

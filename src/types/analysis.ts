@@ -2,6 +2,7 @@ export interface CompanyOverview {
   projectName: string;
   yearFounded: number;
   location: string;
+  industry: string;
 }
 
 export interface FinancialMetrics {
@@ -36,8 +37,7 @@ export interface KPIs {
 
 export interface AcquisitionSchedule {
   date: string;
-  milestone: string;
-  amount: number;
+  percentage: number;
 }
 
 export interface DealStructure {
