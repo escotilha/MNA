@@ -1,15 +1,21 @@
 import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/print.css';
-import { Building2, Calculator } from 'lucide-react';
+import { Building2, Calculator as CalculatorIcon } from 'lucide-react';
 import { CompanyOverviewForm } from './components/CompanyOverviewForm';
 import { FinancialDataForm } from './components/FinancialDataForm';
 import { DealStructureForm } from './components/DealStructureForm';
 import { FinancingDetailsForm } from './components/FinancingDetailsForm';
 import { AnalysisResultsView } from './components/AnalysisResults';
+import { LoginForm } from './components/auth/LoginForm';
+import { SignUpForm } from './components/auth/SignUpForm';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { Navbar } from './components/navigation/Navbar';
+import { AuthProvider } from './contexts/AuthContext';
 import { AnalysisFormData, AnalysisResults } from './types/analysis';
 import { calculateValuation, calculateDebtService, calculateIRR, calculateMOIC, calculatePaybackPeriod } from './utils/calculations';
 
-function App() {
+function MNACalculator() {
   const currentYear = new Date().getFullYear();
   const [showResults, setShowResults] = useState(false);
   
@@ -275,7 +281,7 @@ function App() {
                 onClick={calculateResults}
                 className="inline-flex items-center px-8 py-4 border border-white/20 text-lg font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
               >
-                <Calculator className="mr-2 h-6 w-6" />
+                <CalculatorIcon className="mr-2 h-6 w-6" />
                 Calculate Return
               </button>
             </div>
@@ -301,4 +307,38 @@ function App() {
   );
 }
 
-export default App;
+function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {children}
+      </main>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/signup" element={<SignUpForm />} />
+          <Route
+            path="/calculator"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <MNACalculator />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+}
