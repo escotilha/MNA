@@ -1,68 +1,141 @@
 @media print {
+  /* Reset page margins and settings */
+  @page {
+    margin: 2cm;
+    size: A4;
+  }
+
   /* Hide non-printable elements */
   button,
   .no-print {
     display: none !important;
   }
 
-  /* Reset background colors and shadows for better printing */
-  body {
+  /* Document root styles */
+  html, body {
     background: white !important;
+    font-size: 12pt !important;
+    line-height: 1.5 !important;
+    color: #000 !important;
   }
 
+  /* Header and section styling */
+  h1, h2, h3, h4, h5, h6 {
+    color: #1a365d !important;
+    margin-top: 1.5em !important;
+    margin-bottom: 0.75em !important;
+    page-break-after: avoid !important;
+  }
+
+  h1 { font-size: 24pt !important; }
+  h2 { font-size: 20pt !important; }
+  h3 { font-size: 16pt !important; }
+  h4 { font-size: 14pt !important; }
+
+  /* Container and card styling */
   .bg-white\/90,
   .backdrop-blur-glass,
+  .bg-gray-50,
   .shadow-glass {
     background: white !important;
     backdrop-filter: none !important;
     box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 4px !important;
+    padding: 1em !important;
+    margin-bottom: 1em !important;
   }
 
-  /* Ensure text is readable when printed */
-  * {
-    color: black !important;
-    text-shadow: none !important;
+  /* List styling */
+  ul, ol {
+    padding-left: 1.5em !important;
+    margin-bottom: 1em !important;
   }
 
-  /* Adjust layout for printing */
-  .space-y-6 {
-    margin-top: 1rem !important;
+  li {
+    line-height: 1.6 !important;
+    margin-bottom: 0.25em !important;
   }
 
-  /* Format charts and graphs */
-  .recharts-wrapper {
-    page-break-inside: avoid;
-  }
-
-  /* Add page breaks before major sections */
-  .page-break-before {
-    page-break-before: always;
-  }
-
-  /* Ensure tables fit on pages */
-  table {
-    page-break-inside: avoid;
-  }
-
-  /* Reset text colors for better contrast when printing */
-  .text-white,
-  .text-gray-600,
-  .text-gray-500 {
-    color: black !important;
-  }
-
-  /* Adjust margins and padding */
-  .p-6,
-  .p-4 {
-    padding: 1rem !important;
-  }
-
-  /* Ensure grid layouts print properly */
+  /* Grid and layout adjustments */
   .grid {
     display: block !important;
   }
 
   .grid > * {
-    margin-bottom: 1rem !important;
+    margin-bottom: 1em !important;
+  }
+
+  /* Charts and data visualization */
+  .recharts-wrapper {
+    page-break-inside: avoid !important;
+    margin: 1em 0 !important;
+  }
+
+  /* Table styling */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: avoid !important;
+    margin: 1em 0 !important;
+  }
+
+  th, td {
+    border: 1px solid #e2e8f0 !important;
+    padding: 0.5em !important;
+    text-align: left !important;
+  }
+
+  th {
+    background-color: #f8fafc !important;
+    font-weight: bold !important;
+  }
+
+  /* Text styling */
+  p {
+    margin-bottom: 0.75em !important;
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  /* Color adjustments for better contrast */
+  .text-gray-600,
+  .text-gray-500,
+  .text-gray-700 {
+    color: #2d3748 !important;
+  }
+
+  /* Page breaks */
+  .page-break-before {
+    page-break-before: always !important;
+  }
+
+  .page-break-after {
+    page-break-after: always !important;
+  }
+
+  /* Links */
+  a {
+    text-decoration: none !important;
+    color: #2c5282 !important;
+  }
+
+  /* Header and footer */
+  @page {
+    @top-center {
+      content: "M&A Analysis Report";
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    @bottom-center {
+      content: "Page " counter(page);
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+  }
+
+  /* First page special styling */
+  .report-cover {
+    text-align: center !important;
+    margin: 4cm 0 !important;
+    page-break-after: always !important;
   }
 }
