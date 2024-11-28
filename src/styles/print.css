@@ -25,12 +25,36 @@
     color: #000 !important;
   }
 
+  /* Section containers - Keep sections together */
+  section,
+  .section,
+  .analysis-section,
+  .metrics-section,
+  .risk-section,
+  .opportunities-section,
+  .recommendations-section,
+  .financial-section {
+    page-break-inside: avoid !important;
+    page-break-before: always !important;
+    break-inside: avoid !important;
+    display: block !important;
+    margin-top: 1em !important;
+    margin-bottom: 1em !important;
+  }
+
+  /* First section should not have page break before */
+  section:first-child,
+  .section:first-child {
+    page-break-before: avoid !important;
+  }
+
   /* Header and section styling with backgrounds */
   h1, h2, h3, h4, h5, h6 {
     color: #1a365d !important;
     margin-top: 1.5em !important;
     margin-bottom: 0.75em !important;
     page-break-after: avoid !important;
+    break-after: avoid !important;
     background: #f8fafc !important;
     padding: 0.5em !important;
     border-left: 4px solid #1a365d !important;
@@ -40,6 +64,17 @@
   h2 { font-size: 20pt !important; }
   h3 { font-size: 16pt !important; }
   h4 { font-size: 14pt !important; }
+
+  /* Keep headers with their content */
+  h1 + *,
+  h2 + *,
+  h3 + *,
+  h4 + *,
+  h5 + *,
+  h6 + * {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
 
   /* Container and card styling with backgrounds */
   .bg-white\/90,
@@ -51,42 +86,33 @@
     border-radius: 4px !important;
     padding: 1em !important;
     margin-bottom: 1em !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
-  /* List styling */
-  ul, ol {
-    padding-left: 1.5em !important;
-    margin-bottom: 1em !important;
+  /* Keep related content together */
+  .content-group {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
-  li {
-    line-height: 1.6 !important;
-    margin-bottom: 0.25em !important;
-  }
-
-  /* Grid and layout adjustments */
-  .grid {
-    display: block !important;
-  }
-
-  .grid > * {
-    margin-bottom: 1em !important;
-  }
-
-  /* Charts and data visualization with background */
+  /* Charts and data visualization - Keep together */
+  .chart-container,
   .recharts-wrapper {
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
     margin: 1em 0 !important;
     background: #fafafa !important;
     padding: 1em !important;
     border-radius: 4px !important;
   }
 
-  /* Table styling with backgrounds */
+  /* Table styling with backgrounds - Keep tables together */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
     margin: 1em 0 !important;
     background: white !important;
   }
@@ -107,18 +133,14 @@
     padding: 0.5em !important;
   }
 
-  /* Text styling */
-  p {
-    margin-bottom: 0.75em !important;
-    orphans: 3 !important;
-    widows: 3 !important;
+  /* Keep table header with its content */
+  thead {
+    display: table-header-group !important;
   }
 
-  /* Color adjustments for better contrast */
-  .text-gray-600,
-  .text-gray-500,
-  .text-gray-700 {
-    color: #2d3748 !important;
+  /* Keep table footer with its content */
+  tfoot {
+    display: table-footer-group !important;
   }
 
   /* Special sections with backgrounds */
@@ -140,30 +162,41 @@
     padding: 1em !important;
   }
 
-  /* First page special styling with background */
+  /* Keep lists together */
+  ul, ol {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    padding-left: 1.5em !important;
+    margin-bottom: 1em !important;
+  }
+
+  li {
+    line-height: 1.6 !important;
+    margin-bottom: 0.25em !important;
+  }
+
+  /* Keep figure and captions together */
+  figure {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* First page cover */
   .report-cover {
     text-align: center !important;
     margin: 4cm 0 !important;
     page-break-after: always !important;
+    break-after: always !important;
     background: #f8fafc !important;
     padding: 2cm !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 8px !important;
   }
 
-  /* Page breaks */
-  .page-break-before {
-    page-break-before: always !important;
-  }
-
-  .page-break-after {
+  /* Table of contents - Keep together */
+  .table-of-contents {
     page-break-after: always !important;
-  }
-
-  /* Links */
-  a {
-    text-decoration: none !important;
-    color: #2c5282 !important;
+    break-after: always !important;
   }
 
   /* Header and footer */
@@ -176,5 +209,43 @@
       content: "Page " counter(page);
       font-family: system-ui, -apple-system, sans-serif;
     }
+  }
+
+  /* Avoid orphans and widows */
+  p {
+    orphans: 3 !important;
+    widows: 3 !important;
+    margin-bottom: 0.75em !important;
+  }
+
+  /* Color adjustments for better contrast */
+  .text-gray-600,
+  .text-gray-500,
+  .text-gray-700 {
+    color: #2d3748 !important;
+  }
+
+  /* Grid and layout adjustments */
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    margin-bottom: 1em !important;
+  }
+
+  /* Links */
+  a {
+    text-decoration: none !important;
+    color: #2c5282 !important;
+  }
+
+  /* Page breaks */
+  .page-break-before {
+    page-break-before: always !important;
+  }
+
+  .page-break-after {
+    page-break-after: always !important;
   }
 }
