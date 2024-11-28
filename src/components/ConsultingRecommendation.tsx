@@ -139,38 +139,6 @@ export function ConsultingRecommendation({ results, companyName, industry }: Pro
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold text-gray-700 mb-3">Implementation Roadmap</h4>
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="relative">
-                <div className="absolute top-0 left-4 h-full w-0.5 bg-gray-200"></div>
-                <div className="space-y-6 relative">
-                  <div className="flex items-start">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white font-bold text-sm absolute -left-0">1</div>
-                    <div className="ml-12">
-                      <h6 className="font-medium text-gray-700">First 100 Days</h6>
-                      <p className="text-sm text-gray-600 mt-1">Establish integration team, identify quick wins, and develop detailed value creation plan</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white font-bold text-sm absolute -left-0">2</div>
-                    <div className="ml-12">
-                      <h6 className="font-medium text-gray-700">Months 4-12</h6>
-                      <p className="text-sm text-gray-600 mt-1">Execute operational improvements, implement strategic initiatives, and monitor KPIs</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white font-bold text-sm absolute -left-0">3</div>
-                    <div className="ml-12">
-                      <h6 className="font-medium text-gray-700">Year 2+</h6>
-                      <p className="text-sm text-gray-600 mt-1">Scale successful initiatives, explore M&A opportunities, and prepare for potential exit</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div>
             <h4 className="text-lg font-semibold text-gray-700 mb-3">Risk Mitigation Strategy</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-gray-50 p-4 rounded-lg">
