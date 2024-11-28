@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/print.css';
 import { Building2, Calculator as CalculatorIcon } from 'lucide-react';
@@ -12,12 +12,15 @@ import { SignUpForm } from './components/auth/SignUpForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Navbar } from './components/navigation/Navbar';
 import { AuthProvider } from './contexts/AuthContext';
+import { SavedAnalysisProvider, useSavedAnalysis } from './contexts/SavedAnalysisContext';
 import { AnalysisFormData, AnalysisResults } from './types/analysis';
 import { calculateValuation, calculateDebtService, calculateIRR, calculateMOIC, calculatePaybackPeriod } from './utils/calculations';
+import Dashboard from './components/dashboard/Dashboard';
 
 function MNACalculator() {
   const currentYear = new Date().getFullYear();
   const [showResults, setShowResults] = useState(false);
+  const { state: { selectedAnalysis }, saveAnalysis } = useSavedAnalysis();
   
   const initialGrossRevenue = 1000;
   const initialEBITDA = 300;
@@ -53,57 +56,113 @@ function MNACalculator() {
 
   const randomGreekLetter = greekLetters[Math.floor(Math.random() * greekLetters.length)];
 
-  const historicalData = Array.from({ length: 3 }, (_, i) => ({
-    year: currentYear - (3 - i),
-    metrics: {
-      grossRevenue: Math.round(initialGrossRevenue * Math.pow(growthRate, i)),
-      ebitda: Math.round(initialEBITDA * Math.pow(growthRate, i))
-    },
-  }));
-
-  const projectionData = Array.from({ length: 4 }, (_, i) => ({
-    year: currentYear + i + 1,
-    metrics: {
-      grossRevenue: Math.round(initialGrossRevenue * Math.pow(growthRate, i + 3)),
-      ebitda: Math.round(initialEBITDA * Math.pow(growthRate, i + 3))
-    },
-  }));
-
-  const [formData, setFormData] = useState<AnalysisFormData>({
-    companyOverview: {
-      projectName: `Project ${randomGreekLetter}`,
-      yearFounded: 2020,
-      location: 'São Paulo',
-      industry: '',
-    },
-    historicalData,
-    projectionData,
-    kpis: {
-      recurringRevenue: 0,
-      cashConversionRate: 50,
-      employeeCount: 0,
-      churnRate: 0,
-    },
-    dealStructure: {
-      multiplePaid: 6,
-      exitMultiple: 12,
-      acquisitionSchedule: [
-        { date: '2024', percentage: 55 },
-        { date: '2025', percentage: 15 },
-        { date: '2026', percentage: 15 },
-        { date: '2027', percentage: 15 },
-      ],
-    },
-    financingDetails: {
-      cashComponent: 50,
-      stockComponent: 50,
-      interestRate: 18,
-      termYears: 5,
-      discountRate: 10,
-    },
+  const [formData, setFormData] = useState<AnalysisFormData>(() => {
+    if (selectedAnalysis) {
+      // If there's a selected analysis, pre-fill the form
+      return {
+        companyOverview: {
+          projectName: selectedAnalysis.companyName,
+          industry: selectedAnalysis.industry || '',
+          yearFounded: 2020,
+          location: 'São Paulo',
+        },
+        historicalData: selectedAnalysis.results.projectedEbitda.slice(0, 3).map((ebitda, i) => ({
+          year: currentYear - (3 - i),
+          metrics: {
+            grossRevenue: Math.round(initialGrossRevenue * Math.pow(growthRate, i)),
+            ebitda,
+          },
+        })),
+        projectionData: selectedAnalysis.results.projectedEbitda.slice(3).map((ebitda, i) => ({
+          year: currentYear + i + 1,
+          metrics: {
+            grossRevenue: Math.round(initialGrossRevenue * Math.pow(growthRate, i + 3)),
+            ebitda,
+          },
+        })),
+        kpis: {
+          recurringRevenue: 0,
+          cashConversionRate: 50,
+          employeeCount: 0,
+          churnRate: 0,
+        },
+        dealStructure: {
+          multiplePaid: 6,
+          exitMultiple: 12,
+          acquisitionSchedule: [
+            { date: '2024', percentage: 55 },
+            { date: '2025', percentage: 15 },
+            { date: '2026', percentage: 15 },
+            { date: '2027', percentage: 15 },
+          ],
+        },
+        financingDetails: {
+          cashComponent: 50,
+          stockComponent: 50,
+          interestRate: 18,
+          termYears: 5,
+          discountRate: 10,
+        },
+      };
+    }
+    return {
+      companyOverview: {
+        projectName: `Project ${randomGreekLetter}`,
+        yearFounded: 2020,
+        location: 'São Paulo',
+        industry: '',
+      },
+      historicalData: Array.from({ length: 3 }, (_, i) => ({
+        year: currentYear - (3 - i),
+        metrics: {
+          grossRevenue: Math.round(initialGrossRevenue * Math.pow(growthRate, i)),
+          ebitda: Math.round(initialEBITDA * Math.pow(growthRate, i)),
+        },
+      })),
+      projectionData: Array.from({ length: 4 }, (_, i) => ({
+        year: currentYear + i + 1,
+        metrics: {
+          grossRevenue: Math.round(initialGrossRevenue * Math.pow(growthRate, i + 3)),
+          ebitda: Math.round(initialEBITDA * Math.pow(growthRate, i + 3)),
+        },
+      })),
+      kpis: {
+        recurringRevenue: 0,
+        cashConversionRate: 50,
+        employeeCount: 0,
+        churnRate: 0,
+      },
+      dealStructure: {
+        multiplePaid: 6,
+        exitMultiple: 12,
+        acquisitionSchedule: [
+          { date: '2024', percentage: 55 },
+          { date: '2025', percentage: 15 },
+          { date: '2026', percentage: 15 },
+          { date: '2027', percentage: 15 },
+        ],
+      },
+      financingDetails: {
+        cashComponent: 50,
+        stockComponent: 50,
+        interestRate: 18,
+        termYears: 5,
+        discountRate: 10,
+      },
+    };
   });
 
-  const [results, setResults] = useState<AnalysisResults | null>(null);
+  const [results, setResults] = useState<AnalysisResults | null>(() => {
+    // If there's a selected analysis, use its results
+    return selectedAnalysis ? selectedAnalysis.results : null;
+  });
+
+  // Show results if we're loading a saved analysis
+  useEffect(() => {
+    if (selectedAnalysis) {
+      setShowResults(true);
+    }
+  }, [selectedAnalysis]);
 
   const calculateResults = () => {
     try {
@@ -230,6 +289,16 @@ function MNACalculator() {
     }
   };
 
+  const handleSaveAnalysis = () => {
+    if (results) {
+      saveAnalysis({
+        companyName: formData.companyOverview.projectName || '',
+        industry: formData.companyOverview.industry || '',
+        results
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary-medium to-primary-light">
       <header className="bg-white/10 backdrop-blur-glass shadow-glass border-b border-white/20">
@@ -294,11 +363,28 @@ function MNACalculator() {
             >
               ← Back to Form
             </button>
-            {results && (
-              <AnalysisResultsView
-                results={results}
-                formData={formData}
-              />
+            {showResults && (
+              <div className="mt-8">
+                <div className="flex justify-end mb-4">
+                  <button
+                    onClick={handleSaveAnalysis}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors mr-4"
+                  >
+                    Save Analysis
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors"
+                  >
+                    Print Report
+                  </button>
+                </div>
+                <AnalysisResultsView
+                  results={results}
+                  companyName={formData.companyOverview.projectName}
+                  industry={formData.companyOverview.industry}
+                />
+              </div>
             )}
           </div>
         )}
@@ -318,27 +404,24 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" />} />
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/signup" element={<SignUpForm />} />
-          <Route
-            path="/calculator"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout>
-                  <MNACalculator />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <SavedAnalysisProvider>
+          <Routes>
+            <Route path="/login" element={<LoginForm />} />
+            <Route path="/signup" element={<SignUpForm />} />
+            <Route element={<ProtectedLayout />}>
+              <Route path="/calculator" element={<MNACalculator />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            </Route>
+          </Routes>
+        </SavedAnalysisProvider>
+      </AuthProvider>
+    </Router>
   );
 }
+
+export default App;
