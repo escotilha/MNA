@@ -1,35 +1,64 @@
-import React, { useEffect } from 'react';
-import { HistoricalData, ProjectionData, KPIs, LTMMetrics } from '../types/analysis';
+import React from 'react';
+import { AnalysisFormData } from '../types/analysis';
 
 interface Props {
-  historicalData: HistoricalData[];
-  projectionData: ProjectionData[];
-  kpis: KPIs;
-  onHistoricalChange: (data: HistoricalData[]) => void;
-  onProjectionChange: (data: ProjectionData[]) => void;
-  onKPIsChange: (data: KPIs) => void;
+  formData: AnalysisFormData;
+  setFormData: (data: AnalysisFormData) => void;
 }
 
-export function FinancialDataForm({
-  historicalData,
-  projectionData,
-  kpis,
-  onHistoricalChange,
-  onProjectionChange,
-  onKPIsChange,
-}: Props) {
+export function FinancialDataForm({ formData, setFormData }: Props) {
+  const handleHistoricalChange = (index: number, field: string, value: number) => {
+    const newHistoricalData = [...formData.historicalData];
+    newHistoricalData[index] = {
+      ...newHistoricalData[index],
+      metrics: {
+        ...newHistoricalData[index].metrics,
+        [field]: value,
+      },
+    };
+    setFormData({
+      ...formData,
+      historicalData: newHistoricalData,
+    });
+  };
+
+  const handleProjectionChange = (index: number, field: string, value: number) => {
+    const newProjectionData = [...formData.projectionData];
+    newProjectionData[index] = {
+      ...newProjectionData[index],
+      metrics: {
+        ...newProjectionData[index].metrics,
+        [field]: value,
+      },
+    };
+    setFormData({
+      ...formData,
+      projectionData: newProjectionData,
+    });
+  };
+
+  const handleKPIChange = (field: keyof typeof formData.kpis, value: number) => {
+    setFormData({
+      ...formData,
+      kpis: {
+        ...formData.kpis,
+        [field]: value,
+      },
+    });
+  };
+
   const currentYear = new Date().getFullYear();
 
   // Initialize LTM values when historical data changes or component mounts
-  useEffect(() => {
-    if (historicalData.length > 0) {
-      const lastIndex = historicalData.length - 1;
-      const lastYear = historicalData[lastIndex];
+  React.useEffect(() => {
+    if (formData.historicalData.length > 0) {
+      const lastIndex = formData.historicalData.length - 1;
+      const lastYear = formData.historicalData[lastIndex];
       
       // Only set initial LTM if it's not already set
       if (!lastYear.ltm) {
-        const newData = [...historicalData];
-        newData[lastIndex] = {
+        const newHistoricalData = [...formData.historicalData];
+        newHistoricalData[lastIndex] = {
           ...lastYear,
           ltm: {
             metrics: {
@@ -42,22 +71,24 @@ export function FinancialDataForm({
             }
           }
         };
-        onHistoricalChange(newData);
+        setFormData({
+          ...formData,
+          historicalData: newHistoricalData,
+        });
       }
     }
-  }, [historicalData, currentYear, onHistoricalChange]);
+  }, [formData.historicalData, currentYear, setFormData]);
 
-  const handleLTMChange = (field: keyof LTMMetrics['metrics'], value: number) => {
-    console.log('Handling LTM change:', { field, value });
-    const newData = [...historicalData];
-    const lastIndex = historicalData.length - 1;
+  const handleLTMChange = (field: string, value: number) => {
+    const newHistoricalData = [...formData.historicalData];
+    const lastIndex = formData.historicalData.length - 1;
     
     // Ensure LTM object exists
-    if (!newData[lastIndex].ltm) {
-      newData[lastIndex].ltm = {
+    if (!newHistoricalData[lastIndex].ltm) {
+      newHistoricalData[lastIndex].ltm = {
         metrics: {
-          grossRevenue: newData[lastIndex].metrics.grossRevenue,
-          ebitda: newData[lastIndex].metrics.ebitda
+          grossRevenue: newHistoricalData[lastIndex].metrics.grossRevenue,
+          ebitda: newHistoricalData[lastIndex].metrics.ebitda
         },
         calculatedFrom: {
           startDate: `${currentYear}-01-01`,
@@ -67,9 +98,11 @@ export function FinancialDataForm({
     }
     
     // Update the specific field
-    newData[lastIndex].ltm.metrics[field] = value;
-    console.log('Updated LTM data:', newData[lastIndex].ltm);
-    onHistoricalChange(newData);
+    newHistoricalData[lastIndex].ltm.metrics[field as keyof typeof newHistoricalData[typeof lastIndex]['ltm']['metrics']] = value;
+    setFormData({
+      ...formData,
+      historicalData: newHistoricalData,
+    });
   };
 
   return (
@@ -81,7 +114,7 @@ export function FinancialDataForm({
             <thead>
               <tr className="bg-gradient-to-r from-primary to-primary-medium">
                 <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-32">Metric</th>
-                {historicalData.map((data, index) => (
+                {formData.historicalData.map((data, index) => (
                   <th key={index} className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     {currentYear - (3 - index)}
                   </th>
@@ -94,7 +127,7 @@ export function FinancialDataForm({
             <tbody className="bg-white divide-y divide-gray-200">
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Gross Revenue</td>
-                {historicalData.map((data, index) => (
+                {formData.historicalData.map((data, index) => (
                   <td key={index} className="px-6 py-4 whitespace-nowrap">
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -103,11 +136,7 @@ export function FinancialDataForm({
                       <input
                         type="number"
                         value={data.metrics.grossRevenue}
-                        onChange={(e) => {
-                          const newData = [...historicalData];
-                          newData[index].metrics.grossRevenue = parseFloat(e.target.value);
-                          onHistoricalChange(newData);
-                        }}
+                        onChange={(e) => handleHistoricalChange(index, 'grossRevenue', Number(e.target.value))}
                         className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
                         placeholder="0"
                       />
@@ -124,12 +153,8 @@ export function FinancialDataForm({
                     </div>
                     <input
                       type="number"
-                      value={historicalData[historicalData.length - 1]?.ltm?.metrics?.grossRevenue ?? ''}
-                      onChange={(e) => {
-                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                        console.log('LTM Gross Revenue input change:', value);
-                        handleLTMChange('grossRevenue', value);
-                      }}
+                      value={formData.historicalData[formData.historicalData.length - 1]?.ltm?.metrics?.grossRevenue ?? ''}
+                      onChange={(e) => handleLTMChange('grossRevenue', Number(e.target.value))}
                       className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
                       placeholder="0"
                     />
@@ -141,7 +166,7 @@ export function FinancialDataForm({
               </tr>
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">EBITDA</td>
-                {historicalData.map((data, index) => (
+                {formData.historicalData.map((data, index) => (
                   <td key={index} className="px-6 py-4 whitespace-nowrap">
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -150,11 +175,7 @@ export function FinancialDataForm({
                       <input
                         type="number"
                         value={data.metrics.ebitda}
-                        onChange={(e) => {
-                          const newData = [...historicalData];
-                          newData[index].metrics.ebitda = parseFloat(e.target.value);
-                          onHistoricalChange(newData);
-                        }}
+                        onChange={(e) => handleHistoricalChange(index, 'ebitda', Number(e.target.value))}
                         className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
                         placeholder="0"
                       />
@@ -171,12 +192,8 @@ export function FinancialDataForm({
                     </div>
                     <input
                       type="number"
-                      value={historicalData[historicalData.length - 1]?.ltm?.metrics?.ebitda ?? ''}
-                      onChange={(e) => {
-                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                        console.log('LTM EBITDA input change:', value);
-                        handleLTMChange('ebitda', value);
-                      }}
+                      value={formData.historicalData[formData.historicalData.length - 1]?.ltm?.metrics?.ebitda ?? ''}
+                      onChange={(e) => handleLTMChange('ebitda', Number(e.target.value))}
                       className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
                       placeholder="0"
                     />
@@ -198,7 +215,7 @@ export function FinancialDataForm({
             <thead>
               <tr className="bg-gradient-to-r from-primary to-primary-medium">
                 <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-32">Metric</th>
-                {projectionData.map((data, index) => (
+                {formData.projectionData.map((data, index) => (
                   <th key={index} className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     {currentYear + index + 1}
                   </th>
@@ -208,7 +225,7 @@ export function FinancialDataForm({
             <tbody className="bg-white divide-y divide-gray-200">
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Gross Revenue</td>
-                {projectionData.map((data, index) => (
+                {formData.projectionData.map((data, index) => (
                   <td key={index} className="px-6 py-4 whitespace-nowrap">
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -217,11 +234,7 @@ export function FinancialDataForm({
                       <input
                         type="number"
                         value={data.metrics.grossRevenue}
-                        onChange={(e) => {
-                          const newData = [...projectionData];
-                          newData[index].metrics.grossRevenue = parseFloat(e.target.value);
-                          onProjectionChange(newData);
-                        }}
+                        onChange={(e) => handleProjectionChange(index, 'grossRevenue', Number(e.target.value))}
                         className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
                         placeholder="0"
                       />
@@ -234,7 +247,7 @@ export function FinancialDataForm({
               </tr>
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">EBITDA</td>
-                {projectionData.map((data, index) => (
+                {formData.projectionData.map((data, index) => (
                   <td key={index} className="px-6 py-4 whitespace-nowrap">
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -243,11 +256,7 @@ export function FinancialDataForm({
                       <input
                         type="number"
                         value={data.metrics.ebitda}
-                        onChange={(e) => {
-                          const newData = [...projectionData];
-                          newData[index].metrics.ebitda = parseFloat(e.target.value);
-                          onProjectionChange(newData);
-                        }}
+                        onChange={(e) => handleProjectionChange(index, 'ebitda', Number(e.target.value))}
                         className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
                         placeholder="0"
                       />
@@ -270,8 +279,8 @@ export function FinancialDataForm({
             <label className="block text-sm font-medium text-gray-700">Recurring Revenue (%)</label>
             <input
               type="number"
-              value={kpis.recurringRevenue}
-              onChange={(e) => onKPIsChange({ ...kpis, recurringRevenue: parseFloat(e.target.value) })}
+              value={formData.kpis.recurringRevenue}
+              onChange={(e) => handleKPIChange('recurringRevenue', Number(e.target.value))}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
@@ -279,8 +288,8 @@ export function FinancialDataForm({
             <label className="block text-sm font-medium text-gray-700">Cash Conversion Rate (%)</label>
             <input
               type="number"
-              value={kpis.cashConversionRate}
-              onChange={(e) => onKPIsChange({ ...kpis, cashConversionRate: parseFloat(e.target.value) })}
+              value={formData.kpis.cashConversionRate}
+              onChange={(e) => handleKPIChange('cashConversionRate', Number(e.target.value))}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
@@ -288,8 +297,8 @@ export function FinancialDataForm({
             <label className="block text-sm font-medium text-gray-700">Employee Count</label>
             <input
               type="number"
-              value={kpis.employeeCount}
-              onChange={(e) => onKPIsChange({ ...kpis, employeeCount: parseInt(e.target.value) })}
+              value={formData.kpis.employeeCount}
+              onChange={(e) => handleKPIChange('employeeCount', Number(e.target.value))}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
@@ -297,8 +306,8 @@ export function FinancialDataForm({
             <label className="block text-sm font-medium text-gray-700">Churn Rate (%)</label>
             <input
               type="number"
-              value={kpis.churnRate}
-              onChange={(e) => onKPIsChange({ ...kpis, churnRate: parseFloat(e.target.value) })}
+              value={formData.kpis.churnRate}
+              onChange={(e) => handleKPIChange('churnRate', Number(e.target.value))}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>

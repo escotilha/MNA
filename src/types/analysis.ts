@@ -76,7 +76,17 @@ export interface ReturnMetrics {
 }
 
 export interface DebtServiceResult {
-  // Assuming this interface is defined elsewhere, if not, define it here
+  monthlyPayment: number;
+  annualPayment: number;
+  totalInterest: number;
+  totalPayment: number;
+  schedule: Array<{
+    year: number;
+    payment: number;
+    interest: number;
+    principal: number;
+    remainingBalance: number;
+  }>;
 }
 
 export interface AnalysisResults {
@@ -88,10 +98,6 @@ export interface AnalysisResults {
   cashFlowGeneration: number[];
   debtService: DebtServiceResult;
   netCashPosition: number;
-  debtComponent: number;
-  cashConversionRate: number;
-  acquisitionSchedule: AcquisitionSchedule[];
-  returnMetrics: ReturnMetrics;
   dealStructure: {
     exitMultiple: number;
     equityComponent: number;
@@ -99,6 +105,8 @@ export interface AnalysisResults {
     multiplePaid: number;
     discountRate: number;
   };
+  acquisitionSchedule: AcquisitionSchedule[];
+  returnMetrics: ReturnMetrics;
   riskMetrics: {
     debtServiceCoverage: number;
     interestCoverage: number;
