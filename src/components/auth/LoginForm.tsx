@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSavedAnalysis } from '../../contexts/SavedAnalysisContext';
 import { Calculator, DollarSign, TrendingUp, Shield, X } from 'lucide-react';
 import { ExampleCharts } from '../landing/ExampleCharts';
 
@@ -11,6 +12,7 @@ export function LoginForm() {
   const [showModal, setShowModal] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const { signIn, signUp } = useAuth();
+  const { state: { analyses } } = useSavedAnalysis();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,7 +23,13 @@ export function LoginForm() {
       } else {
         await signUp(email, password);
       }
-      navigate('/calculator', { replace: true });
+      
+      // Check if user has any saved analyses
+      if (analyses && analyses.length > 0) {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/calculator', { replace: true });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to authenticate');
     }

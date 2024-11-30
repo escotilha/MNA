@@ -3,8 +3,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AnalysisResults, AnalysisFormData } from '../types/analysis';
 import { SensitivityAnalysis } from './SensitivityAnalysis';
 import { ConsultingRecommendation } from './ConsultingRecommendation';
-import { FileDown } from 'lucide-react';
-import { generatePDFReport } from './PDFReport';
+import { FileDown, Printer } from 'lucide-react';
+import { generatePDFReport, printPDFReport } from './PDFReport';
 
 interface Props {
   results: AnalysisResults;
@@ -43,22 +43,54 @@ export function AnalysisResultsView({ results, formData }: Props) {
 
   const handlePrintReport = async () => {
     const button = document.querySelector('[data-pdf-button]') as HTMLButtonElement;
-    if (button) {
-      button.disabled = true;
-      button.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span>Generating PDF...';
+    if (!button) {
+      console.error('PDF button not found');
+      return;
     }
 
+    button.disabled = true;
+    button.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span>Generating PDF...';
+
     try {
+      console.log('Starting PDF generation with data:', { formData, results });
       await generatePDFReport(formData, results);
+      console.log('PDF generated successfully');
     } catch (error) {
-      console.error('Error generating PDF report:', error);
-      // Show error to user
-      alert('Failed to generate PDF report. Please try again.');
-    } finally {
-      if (button) {
-        button.disabled = false;
-        button.innerHTML = '<svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download PDF Report';
+      console.error('PDF generation failed:', error);
+      if (error instanceof Error) {
+        alert(`Failed to generate PDF: ${error.message}`);
+      } else {
+        alert('Failed to generate PDF. Please check console for details.');
       }
+    } finally {
+      button.disabled = false;
+      button.innerHTML = '<svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download PDF Report';
+    }
+  };
+
+  const handlePrintPDF = async () => {
+    const button = document.querySelector('[data-print-button]') as HTMLButtonElement;
+    if (!button) {
+      console.error('Print button not found');
+      return;
+    }
+
+    button.disabled = true;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span>Opening Print...';
+
+    try {
+      await printPDFReport(formData, results);
+    } catch (error) {
+      console.error('PDF print failed:', error);
+      if (error instanceof Error) {
+        alert(`Failed to print PDF: ${error.message}`);
+      } else {
+        alert('Failed to print PDF. Please check console for details.');
+      }
+    } finally {
+      button.disabled = false;
+      button.innerHTML = originalContent;
     }
   };
 
@@ -73,14 +105,24 @@ export function AnalysisResultsView({ results, formData }: Props) {
           >
             New Calculation
           </button>
-          <button
-            data-pdf-button
-            onClick={handlePrintReport}
-            className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FileDown className="mr-2 h-5 w-5" />
-            Download PDF Report
-          </button>
+          <div className="space-x-2 flex">
+            <button
+              data-pdf-button
+              onClick={handlePrintReport}
+              className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileDown className="mr-2 h-5 w-5" />
+              Download PDF Report
+            </button>
+            <button
+              data-print-button
+              onClick={handlePrintPDF}
+              className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Printer className="mr-2 h-5 w-5" />
+              Print Report
+            </button>
+          </div>
         </div>
       </div>
 
