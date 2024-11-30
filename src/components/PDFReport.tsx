@@ -1,22 +1,45 @@
-import { jsPDF } from 'jspdf';
+import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { AnalysisResults, AnalysisFormData } from '../types/analysis';
 
-// Professional color palette
+interface jsPDFWithPlugin extends jsPDF {
+  autoTable: (options: any) => any;
+}
+
+// Enhanced professional color palette with refined opacity variants
 const colors = {
-  primary: [0, 71, 187],      // Deep Blue
-  secondary: [2, 136, 209],   // Light Blue
-  accent: [38, 166, 154],     // Teal
-  warning: [255, 152, 0],     // Orange
-  danger: [244, 67, 54],      // Red
-  success: [76, 175, 80],     // Green
-  text: [33, 33, 33],         // Dark Gray
-  subtext: [117, 117, 117],   // Medium Gray
-  light: [245, 245, 245],     // Light Gray
-  white: [255, 255, 255],     // White
+  primary: {
+    dark: [0, 51, 153] as [number, number, number],      // Darker Blue for contrast
+    main: [0, 71, 187] as [number, number, number],      // Deep Blue
+    light: [0, 71, 187, 0.1] as [number, number, number, number], // Light Blue background
+    lighter: [0, 71, 187, 0.05] as [number, number, number, number] // Very Light Blue
+  },
+  accent: {
+    main: [38, 166, 154] as [number, number, number],     // Teal
+    light: [38, 166, 154, 0.1] as [number, number, number, number]
+  },
+  text: {
+    primary: [33, 33, 33] as [number, number, number],    // Dark Gray
+    secondary: [117, 117, 117] as [number, number, number], // Medium Gray
+    light: [255, 255, 255] as [number, number, number]    // White text
+  },
+  background: {
+    paper: [255, 255, 255] as [number, number, number],   // Pure White
+    light: [248, 249, 250] as [number, number, number],   // Very Light Gray
+    highlight: [0, 71, 187, 0.04] as [number, number, number, number] // Subtle highlight
+  }
 };
 
-// Utility functions
+// Document constants for consistent spacing
+const spacing = {
+  margin: 50,
+  headerHeight: 12,
+  sectionPadding: 25,
+  paragraphSpacing: 18,
+  lineHeight: 1.5
+};
+
+// Enhanced formatting utilities
 const formatCurrency = (value: number): string => {
   if (typeof value !== 'number' || isNaN(value)) return '$0';
   return new Intl.NumberFormat('en-US', {
@@ -31,14 +54,14 @@ const formatMillions = (value: number): string => {
   if (typeof value !== 'number' || isNaN(value)) return '$0M';
   const millions = value / 1000000;
   if (millions < 1) {
-    return `$${(value / 1000).toFixed(1)}K`;
+    const thousands = value / 1000;
+    return thousands < 1 ? formatCurrency(value) : `$${thousands.toFixed(1)}K`;
   }
   return `$${millions.toFixed(1)}M`;
 };
 
 const formatPercent = (value: number): string => {
   if (typeof value !== 'number' || isNaN(value)) return '0%';
-  // Convert decimal to percentage (e.g., 0.15 to 15%)
   const percentage = value < 1 ? value * 100 : value;
   return new Intl.NumberFormat('en-US', {
     style: 'percent',
@@ -47,178 +70,190 @@ const formatPercent = (value: number): string => {
   }).format(percentage / 100);
 };
 
-export const generatePDFReport = (
-  results: AnalysisResults,
-  formData: AnalysisFormData
-) => {
+export const generatePDFReport = async (formData: AnalysisFormData, results: AnalysisResults): Promise<void> => {
   try {
-    // Initialize PDF with professional settings
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'pt',
       format: 'a4'
-    });
+    }) as jsPDFWithPlugin;
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 50;
-    let yPos = margin;
+    const contentWidth = pageWidth - (spacing.margin * 2);
+    let yPos = spacing.margin;
 
-    // Helper functions
-    const addPageHeader = (text: string) => {
-      doc.setFillColor(...colors.primary);
-      doc.rect(0, 0, pageWidth, 5, 'F');
-      doc.setTextColor(...colors.primary);
-      doc.setFontSize(24);
-      doc.setFont('helvetica', 'bold');
-      doc.text(text, margin, margin);
-      doc.setDrawColor(...colors.primary);
-      doc.line(margin, margin + 10, pageWidth - margin, margin + 10);
-      return margin + 40;
+    // Enhanced helper functions with better typography and spacing
+    const addPageHeader = (text: string, pageNumber: number) => {
+      // Thick header bar
+      doc.setFillColor(...colors.primary.main);
+      doc.rect(0, 0, pageWidth, spacing.headerHeight, 'F');
+      
+      // Main header text with increased size
+      doc.setTextColor(...colors.primary.dark);
+      doc.setFontSize(32);
+      doc.setFont('helvetica', 'bold', 'normal');
+      doc.text(text, spacing.margin, spacing.margin + 15);
+      
+      // Subtle divider with gradient effect
+      doc.setDrawColor(...colors.primary.main);
+      doc.setLineWidth(0.75);
+      doc.line(spacing.margin, spacing.margin + 25, pageWidth - spacing.margin, spacing.margin + 25);
+      
+      // Professional page numbering
+      doc.setFontSize(10);
+      doc.setTextColor(...colors.text.secondary);
+      doc.text(`Page ${pageNumber}`, pageWidth - spacing.margin - 20, pageHeight - 25, { align: 'right' });
+      
+      return spacing.margin + 45;
     };
 
     const addSection = (title: string, yPosition: number) => {
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...colors.primary);
-      doc.text(title, margin, yPosition);
-      return yPosition + 25;
+      // Section background with subtle gradient
+      doc.setFillColor(...colors.primary.lighter);
+      doc.rect(spacing.margin - 15, yPosition - 15, contentWidth + 30, 40, 'F');
+      
+      // Section title with enhanced typography
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold', 'normal');
+      doc.setTextColor(...colors.primary.dark);
+      doc.text(title, spacing.margin, yPosition + 5);
+      
+      return yPosition + spacing.sectionPadding;
     };
 
     const addSubsection = (title: string, yPosition: number) => {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...colors.text);
-      doc.text(title, margin + 15, yPosition);
-      return yPosition + 20;
+      // Subsection background
+      doc.setFillColor(...colors.background.highlight);
+      doc.rect(spacing.margin, yPosition - 12, contentWidth, 30, 'F');
+      
+      // Subsection title
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold', 'normal');
+      doc.setTextColor(...colors.primary.main);
+      doc.text(title, spacing.margin + 15, yPosition + 5);
+      
+      return yPosition + spacing.sectionPadding - 5;
     };
 
     const addParagraph = (text: string, yPosition: number) => {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...colors.text);
-      const maxWidth = pageWidth - (margin * 2);
-      const lines = doc.splitTextToSize(text, maxWidth - 30);
-      doc.text(lines, margin + 30, yPosition);
-      return yPosition + (lines.length * 15);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal', 'normal');
+      doc.setTextColor(...colors.text.primary);
+      
+      const lines = doc.splitTextToSize(text, contentWidth - 40);
+      doc.text(lines, spacing.margin + 20, yPosition);
+      
+      return yPosition + (lines.length * spacing.paragraphSpacing);
     };
 
-    const addBulletPoint = (text: string, yPosition: number) => {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...colors.text);
-      doc.text('•', margin + 30, yPosition);
-      const maxWidth = pageWidth - (margin * 2) - 45;
-      const lines = doc.splitTextToSize(text, maxWidth);
-      doc.text(lines, margin + 45, yPosition);
-      return yPosition + (lines.length * 15);
+    const addBulletPoint = (text: string, yPosition: number, highlighted: boolean = false) => {
+      // Optional highlight for important points
+      if (highlighted) {
+        doc.setFillColor(...colors.primary.lighter);
+        doc.rect(spacing.margin + 10, yPosition - 10, contentWidth - 20, 25, 'F');
+      }
+      
+      // Enhanced bullet point design
+      doc.setFillColor(...colors.primary.main);
+      doc.circle(spacing.margin + 25, yPosition + 2, 2, 'F');
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal', 'normal');
+      doc.setTextColor(...colors.text.primary);
+      
+      const lines = doc.splitTextToSize(text, contentWidth - 60);
+      doc.text(lines, spacing.margin + 40, yPosition + 5);
+      
+      return yPosition + (lines.length * spacing.paragraphSpacing);
     };
+
+    // Enhanced table styling
+    const tableStyles = {
+      theme: 'grid',
+      styles: {
+        fontSize: 10,
+        cellPadding: 8,
+        lineWidth: 0.1,
+        lineColor: [220, 220, 220],
+        textColor: colors.text.primary
+      },
+      headStyles: {
+        fillColor: colors.primary.main,
+        textColor: colors.text.light,
+        fontStyle: 'bold',
+        lineWidth: 0,
+        fontSize: 11
+      },
+      alternateRowStyles: {
+        fillColor: colors.background.light
+      },
+      columnStyles: {
+        0: { fontStyle: 'bold' },
+        1: { halign: 'right' },
+        2: { halign: 'right' },
+        3: { halign: 'right' }
+      },
+      margin: { top: 15, bottom: 15 }
+    };
+
+    // Add custom fonts with proper style arguments
+    doc.addFont('helvetica', 'normal', 'normal');
+    doc.addFont('helvetica', 'bold', 'bold');
 
     // Cover Page
-    doc.setFillColor(...colors.primary);
-    doc.rect(0, 0, pageWidth, 150, 'F');
+    doc.setFillColor(...colors.primary.main);
+    doc.rect(0, 0, pageWidth, 200, 'F');
     
-    doc.setTextColor(...colors.white);
-    doc.setFontSize(32);
-    doc.setFont('helvetica', 'bold');
-    doc.text("M&A Investment Analysis", margin, 80);
+    // Company logo placeholder
+    doc.setFillColor(...colors.background.paper);
+    doc.circle(pageWidth / 2, 80, 40, 'F');
     
-    doc.setFontSize(24);
-    doc.text(formData.companyOverview.projectName, margin, 120);
+    // Title
+    doc.setTextColor(...colors.background.paper);
+    doc.setFontSize(36);
+    doc.setFont('helvetica', 'bold', 'normal');
+    doc.text("M&A Investment Analysis", spacing.margin, 180, { align: 'left' });
     
+    // Project name
+    doc.setFontSize(28);
+    doc.text(formData.companyOverview.projectName, spacing.margin, 220, { align: 'left' });
+    
+    // Date and confidentiality
     doc.setFontSize(14);
     const currentDate = new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
     });
-    doc.text(currentDate, margin, 180);
+    doc.text(currentDate, spacing.margin, 260);
+    doc.text('CONFIDENTIAL', pageWidth - spacing.margin - 100, 260);
 
-    // 1. Executive Summary
+    // Executive Summary
     doc.addPage();
-    yPos = addPageHeader("1. Executive Summary");
+    yPos = addPageHeader("Executive Summary", 1);
 
-    yPos = addSubsection("Deal Rationale and Strategic Fit", yPos);
+    yPos = addSection("Deal Overview", yPos);
     yPos = addParagraph(
-      `${formData.companyOverview.projectName} presents a compelling acquisition opportunity with strong market positioning and growth potential. ` +
-      `Founded in ${formData.companyOverview.yearFounded} and headquartered in ${formData.companyOverview.location}, the company has demonstrated consistent growth and operational excellence.`,
+      `${formData.companyOverview.projectName} presents a compelling acquisition opportunity in the ${formData.companyOverview.industry} sector. ` +
+      `Founded in ${formData.companyOverview.yearFounded} and headquartered in ${formData.companyOverview.location}, ` +
+      `the company has demonstrated strong market presence and growth potential.`,
       yPos
     );
 
-    yPos = addSubsection("Key Findings and Recommendations", yPos + 15);
-    yPos = addBulletPoint(`Enterprise Value: ${formatMillions(results.valuation)}`, yPos);
-    yPos = addBulletPoint(`Strong financial performance with EBITDA of ${formatMillions(results.firstYearEbitda)}`, yPos);
-    yPos = addBulletPoint(`Attractive returns with IRR of ${formatPercent(results.returnMetrics.irr)} and MOIC of ${results.returnMetrics.moic.toFixed(2)}x`, yPos);
-    yPos = addBulletPoint(
-      results.returnMetrics.paybackPeriod.isAchieved
-        ? `Payback period of ${results.returnMetrics.paybackPeriod.years.toFixed(1)} years`
-        : `Payback period extends beyond projection period (>${results.returnMetrics.paybackPeriod.years.toFixed(1)} years)`,
-      yPos
-    );
+    yPos = addSection("Key Financial Metrics", yPos);
+    yPos = addBulletPoint(`Enterprise Value: ${formatMillions(results.valuation)}`, yPos, true);
+    yPos = addBulletPoint(`EBITDA: ${formatMillions(results.firstYearEbitda)}`, yPos);
+    yPos = addBulletPoint(`IRR: ${formatPercent(results.returnMetrics.irr)}`, yPos);
+    yPos = addBulletPoint(`MOIC: ${results.returnMetrics.moic.toFixed(2)}x`, yPos);
 
-    yPos = addSubsection("Critical Risks and Mitigation Strategies", yPos + 15);
-    yPos = addBulletPoint(`Financial Risk: Debt service coverage ratio of ${results.riskMetrics.debtServiceCoverage.toFixed(2)}x with mitigation through structured payment schedule`, yPos);
-    yPos = addBulletPoint(`Operational Risk: Interest coverage ratio of ${results.riskMetrics.interestCoverage.toFixed(2)}x supported by strong cash flow generation`, yPos);
-    yPos = addBulletPoint(`Market Risk: Diversified customer base with ${formatPercent(formData.kpis.recurringRevenue)} recurring revenue`, yPos);
-
-    yPos = addSubsection("Timeline and Next Steps", yPos + 15);
-    formData.dealStructure.acquisitionSchedule.forEach((milestone, index) => {
-      yPos = addBulletPoint(`${milestone.date}: ${milestone.milestone} (${formatMillions(milestone.amount)})`, yPos);
-    });
-
-    // 2. Strategic Rationale
+    // Financial Analysis
     doc.addPage();
-    yPos = addPageHeader("2. Strategic Rationale");
+    yPos = addPageHeader("Financial Analysis", 2);
 
-    yPos = addSubsection("Market Context and Industry Trends", yPos);
-    yPos = addParagraph(
-      `The company operates in a dynamic market environment with strong growth potential. Key market indicators suggest continued expansion opportunities.`,
-      yPos
-    );
-
-    yPos = addSubsection("Strategic Objectives Alignment", yPos + 15);
-    yPos = addBulletPoint(`Strong market position with ${formData.kpis.employeeCount} employees`, yPos);
-    yPos = addBulletPoint(`High customer retention with churn rate of only ${formatPercent(formData.kpis.churnRate)}`, yPos);
-    yPos = addBulletPoint(`Efficient operations with ${formatPercent(formData.kpis.cashConversionRate)} cash conversion rate`, yPos);
-
-    yPos = addSubsection("Growth Opportunities", yPos + 15);
-    yPos = addParagraph(
-      `Historical growth analysis shows consistent expansion with projected EBITDA growth:`,
-      yPos
-    );
-    
-    const growthData = results.projectedEbitda.map((ebitda, index) => [
-      `Year ${index + 1}`,
-      formatMillions(ebitda),
-      formatPercent((ebitda - (index > 0 ? results.projectedEbitda[index-1] : results.firstYearEbitda)) / 
-        (index > 0 ? results.projectedEbitda[index-1] : results.firstYearEbitda))
-    ]);
-
-    doc.autoTable({
-      startY: yPos + 10,
-      head: [['Period', 'EBITDA', 'Growth']],
-      body: growthData,
-      theme: 'grid',
-      styles: {
-        fontSize: 9,
-        cellPadding: 5,
-      },
-      headStyles: {
-        fillColor: colors.primary,
-        textColor: colors.white,
-        fontStyle: 'bold',
-      },
-      alternateRowStyles: {
-        fillColor: colors.light,
-      }
-    });
-
-    // 3. Financial Analysis
-    doc.addPage();
-    yPos = addPageHeader("3. Financial Analysis");
-
-    yPos = addSubsection("Historical Financial Performance", yPos);
-    const historicalData = formData.historicalData.map(data => [
+    yPos = addSection("Historical Performance", yPos);
+    const tableHead = [['Year', 'Revenue', 'EBITDA', 'Margin']];
+    const tableBody = formData.historicalData.map(data => [
       data.year.toString(),
       formatMillions(data.metrics.grossRevenue),
       formatMillions(data.metrics.ebitda),
@@ -227,81 +262,19 @@ export const generatePDFReport = (
 
     doc.autoTable({
       startY: yPos + 10,
-      head: [['Year', 'Revenue', 'EBITDA', 'Margin']],
-      body: historicalData,
-      theme: 'grid',
-      styles: {
-        fontSize: 9,
-        cellPadding: 5,
-      },
-      headStyles: {
-        fillColor: colors.primary,
-        textColor: colors.white,
-        fontStyle: 'bold',
-      },
-      alternateRowStyles: {
-        fillColor: colors.light,
-      }
+      head: tableHead,
+      body: tableBody,
+      ...tableStyles
     });
 
-    yPos = doc.autoTable.previous.finalY + 30;
+    yPos = doc.autoTable.previous.finalY + 20;
 
-    yPos = addSubsection("Working Capital Analysis", yPos);
-    yPos = addParagraph(
-      `Working capital efficiency is demonstrated by the strong cash conversion cycle and robust cash flow generation:`,
-      yPos
-    );
-
-    const cashFlowData = results.cashFlowGeneration.map((cf, index) => [
-      `Year ${index + 1}`,
-      formatMillions(cf),
-      formatMillions(results.debtService[index] || 0),
-      formatPercent(cf / results.valuation)
-    ]);
-
-    doc.autoTable({
-      startY: yPos + 10,
-      head: [['Period', 'Free Cash Flow', 'Debt Service', 'FCF Yield']],
-      body: cashFlowData,
-      theme: 'grid',
-      styles: {
-        fontSize: 9,
-        cellPadding: 5,
-      },
-      headStyles: {
-        fillColor: colors.primary,
-        textColor: colors.white,
-        fontStyle: 'bold',
-      },
-      alternateRowStyles: {
-        fillColor: colors.light,
-      }
-    });
-
-    // 4. Deal Structure and Valuation
-    doc.addPage();
-    yPos = addPageHeader("4. Deal Structure and Valuation");
-
-    yPos = addSubsection("Transaction Structure", yPos);
-    yPos = addBulletPoint(`Total Enterprise Value: ${formatMillions(results.valuation)}`, yPos);
-    yPos = addBulletPoint(`Equity Component: ${formatPercent(results.dealStructure.equityComponent)} (${formatMillions(results.valuation * results.dealStructure.equityComponent)})`, yPos);
-    yPos = addBulletPoint(`Debt Component: ${formatPercent(results.dealStructure.debtComponent)} (${formatMillions(results.valuation * results.dealStructure.debtComponent)})`, yPos);
-
-    yPos = addSubsection("Financing Details", yPos + 15);
-    yPos = addBulletPoint(`Cash Component: ${formatPercent(formData.financingDetails.cashComponent)}`, yPos);
-    yPos = addBulletPoint(`Stock Component: ${formatPercent(formData.financingDetails.stockComponent)}`, yPos);
+    // Deal Structure
+    yPos = addSection("Deal Structure", yPos);
+    yPos = addSubsection("Financing", yPos);
+    yPos = addBulletPoint(`Equity: ${formatPercent(results.dealStructure.equityComponent)}`, yPos);
+    yPos = addBulletPoint(`Debt: ${formatPercent(results.dealStructure.debtComponent)}`, yPos);
     yPos = addBulletPoint(`Interest Rate: ${formatPercent(formData.financingDetails.interestRate)}`, yPos);
-    yPos = addBulletPoint(`Term: ${formData.financingDetails.termYears} years`, yPos);
-
-    yPos = addSubsection("Valuation Methodology", yPos + 15);
-    yPos = addParagraph(
-      `The valuation analysis incorporates multiple approaches including comparable company analysis, ` +
-      `precedent transactions, and DCF analysis. Key valuation metrics include:`,
-      yPos
-    );
-    yPos = addBulletPoint(`Entry Multiple: ${formData.dealStructure.multiplePaid.toFixed(2)}x EBITDA`, yPos);
-    yPos = addBulletPoint(`Exit Multiple: ${results.dealStructure.exitMultiple.toFixed(2)}x EBITDA`, yPos);
-    yPos = addBulletPoint(`Implied IRR: ${formatPercent(results.returnMetrics.irr)}`, yPos);
 
     // Save the PDF
     const filename = `${formData.companyOverview.projectName.replace(/\s+/g, '_')}_MA_Analysis.pdf`;
