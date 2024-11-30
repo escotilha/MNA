@@ -285,6 +285,7 @@ function MNACalculator() {
             annualPayment: debtServiceResult.yearlyPayments[0],
             totalInterest: debtServiceResult.totalInterest,
             totalPayment: debtServiceResult.totalPayment,
+            yearlyPayments: debtServiceResult.yearlyPayments,
             schedule: debtServiceResult.yearlyPayments.map((yearlyPayment, index) => {
               const remainingYears = formData.financingDetails.termYears - index;
               const remainingPayments = yearlyPayment * remainingYears;

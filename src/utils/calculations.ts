@@ -80,18 +80,11 @@ export function calculateDebtService(
   console.log('calculateDebtService input:', { principal, interestRate, termYears });
   try {
     // Validate inputs
-    if (!Number.isFinite(principal) || principal <= 0) {
-      throw new Error('Principal must be a positive number');
-    }
-    if (!Number.isFinite(interestRate) || interestRate <= 0 || interestRate >= 100) {
-      throw new Error('Interest rate must be between 0 and 100');
-    }
-    if (!Number.isFinite(termYears) || termYears <= 0) {
-      throw new Error('Term years must be a positive number');
-    }
+    validators.isPositive(principal, 'Principal');
+    validators.isValidRate(interestRate, 'Interest rate');
+    validators.isPositive(termYears, 'Term years');
 
     const monthlyRate = interestRate / 12 / 100;
-    console.log('Monthly rate:', monthlyRate);
     const totalMonths = termYears * 12;
     
     // Calculate monthly payment using standard loan payment formula
@@ -104,18 +97,18 @@ export function calculateDebtService(
     console.log('Monthly payment:', monthlyPayment);
     
     if (!Number.isFinite(monthlyPayment) || monthlyPayment <= 0) {
-      throw new Error('Invalid monthly payment calculation');
+      throw new FinancialCalculationError('Invalid monthly payment calculation');
     }
 
-    // Calculate yearly payments
+    // Calculate yearly payment and initialize yearlyPayments array
     const yearlyPayment = monthlyPayment * 12;
-    const yearlyPayments = Array.from({ length: termYears }, () => Number(yearlyPayment.toFixed(2)));
+    const yearlyPayments = new Array(termYears).fill(0).map(() => Number(yearlyPayment.toFixed(2)));
     
     // Calculate total amounts
     const totalPayment = yearlyPayment * termYears;
     const totalInterest = totalPayment - principal;
 
-    const result = {
+    const result: DebtServiceResult = {
       yearlyPayments,
       totalInterest: Number(totalInterest.toFixed(2)),
       totalPayment: Number(totalPayment.toFixed(2))
@@ -124,14 +117,19 @@ export function calculateDebtService(
     console.log('Debt service result:', result);
     
     // Validate result
-    if (!result.yearlyPayments || result.yearlyPayments.length === 0) {
-      throw new Error('Failed to calculate yearly payments');
+    if (!Array.isArray(result.yearlyPayments) || result.yearlyPayments.length !== termYears) {
+      throw new FinancialCalculationError('Failed to calculate yearly payments');
     }
+    result.yearlyPayments.forEach((payment, index) => {
+      if (!Number.isFinite(payment) || payment <= 0) {
+        throw new FinancialCalculationError(`Invalid yearly payment for year ${index + 1}`);
+      }
+    });
     if (!Number.isFinite(result.totalInterest)) {
-      throw new Error('Invalid total interest calculation');
+      throw new FinancialCalculationError('Invalid total interest calculation');
     }
     if (!Number.isFinite(result.totalPayment)) {
-      throw new Error('Invalid total payment calculation');
+      throw new FinancialCalculationError('Invalid total payment calculation');
     }
 
     return result;
