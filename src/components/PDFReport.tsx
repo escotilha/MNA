@@ -72,11 +72,14 @@ const formatPercent = (value: number): string => {
 
 export const generatePDFReport = async (formData: AnalysisFormData, results: AnalysisResults): Promise<void> => {
   try {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'pt',
-      format: 'a4'
-    }) as jsPDFWithPlugin;
+    // Initialize jsPDF with proper settings
+    const doc = new jsPDF('p', 'pt', 'a4') as jsPDFWithPlugin;
+    
+    if (!doc.autoTable) {
+      throw new Error('autoTable plugin not initialized properly');
+    }
+
+    console.log('Starting PDF generation...'); // Debug log
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -282,11 +285,13 @@ export const generatePDFReport = async (formData: AnalysisFormData, results: Ana
       return date.toISOString().split('T')[0]; // YYYY-MM-DD format
     };
 
+    console.log('Saving PDF...'); // Debug log
     const filename = `${formData.companyOverview.projectName.replace(/\s+/g, '_')}_MA_Analysis_${getFormattedDate()}.pdf`;
     doc.save(filename);
+    console.log('PDF saved successfully!'); // Debug log
 
   } catch (error) {
-    console.error('PDF Generation Error:', error);
-    throw error;
+    console.error('Error generating PDF:', error);
+    throw error; // Re-throw to be handled by the component
   }
 };

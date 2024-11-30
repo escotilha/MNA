@@ -42,10 +42,23 @@ export function AnalysisResultsView({ results, formData }: Props) {
   };
 
   const handlePrintReport = async () => {
+    const button = document.querySelector('[data-pdf-button]') as HTMLButtonElement;
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span>Generating PDF...';
+    }
+
     try {
       await generatePDFReport(formData, results);
     } catch (error) {
       console.error('Error generating PDF report:', error);
+      // Show error to user
+      alert('Failed to generate PDF report. Please try again.');
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.innerHTML = '<svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download PDF Report';
+      }
     }
   };
 
@@ -61,8 +74,9 @@ export function AnalysisResultsView({ results, formData }: Props) {
             New Calculation
           </button>
           <button
+            data-pdf-button
             onClick={handlePrintReport}
-            className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
+            className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileDown className="mr-2 h-5 w-5" />
             Download PDF Report
