@@ -23,6 +23,19 @@ console.log('App.tsx loaded');
 function MNACalculator() {
   console.log('MNACalculator component rendering');
   const currentYear = new Date().getFullYear();
+  
+  // Generate project name with Greek letter and day of year
+  const generateProjectName = () => {
+    const greekLetters = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda', 'Mu', 'Nu', 'Xi', 'Omicron', 'Pi', 'Rho', 'Sigma', 'Tau', 'Upsilon', 'Phi', 'Chi', 'Psi', 'Omega'];
+    const randomGreek = greekLetters[Math.floor(Math.random() * greekLetters.length)];
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = now.getTime() - start.getTime();
+    const oneDay = 1000 * 60 * 60 * 24;
+    const dayOfYear = Math.floor(diff / oneDay);
+    return `Project ${randomGreek} ${dayOfYear}`;
+  };
+
   const [showResults, setShowResults] = useState(false);
   const { state: { selectedAnalysis }, saveAnalysis } = useSavedAnalysis();
   const [loading, setLoading] = useState(true);
@@ -37,7 +50,7 @@ function MNACalculator() {
 
   const initialFormData: AnalysisFormData = {
     companyOverview: {
-      projectName: 'Project Alpha',
+      projectName: generateProjectName(),
       yearFounded: currentYear - 5,
       location: 'São Paulo',
       industry: 'Technology',
