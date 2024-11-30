@@ -62,13 +62,14 @@ export function FinancialDataForm({ formData, setFormData }: Props) {
   const handleLTMChange = (field: string, value: number) => {
     const newHistoricalData = [...formData.historicalData];
     const lastIndex = formData.historicalData.length - 1;
-    
+    const lastYear = newHistoricalData[lastIndex];
+
     // Ensure LTM object exists
-    if (!newHistoricalData[lastIndex].ltm) {
-      newHistoricalData[lastIndex].ltm = {
+    if (!lastYear.ltm) {
+      lastYear.ltm = {
         metrics: {
-          grossRevenue: newHistoricalData[lastIndex].metrics.grossRevenue,
-          ebitda: newHistoricalData[lastIndex].metrics.ebitda
+          grossRevenue: lastYear.metrics.grossRevenue,
+          ebitda: lastYear.metrics.ebitda
         },
         calculatedFrom: {
           startDate: `${new Date().getFullYear()}-01-01`,
@@ -76,9 +77,12 @@ export function FinancialDataForm({ formData, setFormData }: Props) {
         }
       };
     }
-    
+
     // Update the specific field
-    newHistoricalData[lastIndex].ltm.metrics[field as keyof typeof newHistoricalData[typeof lastIndex]['ltm']['metrics']] = value;
+    if (field === 'grossRevenue' || field === 'ebitda') {
+      lastYear.ltm.metrics[field] = value;
+    }
+
     setFormData({
       ...formData,
       historicalData: newHistoricalData,
@@ -126,7 +130,7 @@ export function FinancialDataForm({ formData, setFormData }: Props) {
             <thead>
               <tr className="bg-gradient-to-r from-primary to-primary-medium">
                 <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-32">Metric</th>
-                {formData.historicalData.map((data, index) => (
+                {formData.historicalData.map((_, index) => (
                   <th key={index} className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     {currentYear - (3 - index)}
                   </th>
@@ -158,23 +162,25 @@ export function FinancialDataForm({ formData, setFormData }: Props) {
                     </div>
                   </td>
                 ))}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">$</span>
+                {formData.historicalData.length > 0 && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">$</span>
+                      </div>
+                      <input
+                        type="number"
+                        value={formData.historicalData[formData.historicalData.length - 1]?.ltm?.metrics?.grossRevenue ?? ''}
+                        onChange={(e) => handleLTMChange('grossRevenue', Number(e.target.value))}
+                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
+                        placeholder="0"
+                      />
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">thousands</span>
+                      </div>
                     </div>
-                    <input
-                      type="number"
-                      value={formData.historicalData[formData.historicalData.length - 1]?.ltm?.metrics?.grossRevenue ?? ''}
-                      onChange={(e) => handleLTMChange('grossRevenue', Number(e.target.value))}
-                      className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
-                      placeholder="0"
-                    />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">thousands</span>
-                    </div>
-                  </div>
-                </td>
+                  </td>
+                )}
               </tr>
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">EBITDA</td>
@@ -197,23 +203,25 @@ export function FinancialDataForm({ formData, setFormData }: Props) {
                     </div>
                   </td>
                 ))}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">$</span>
+                {formData.historicalData.length > 0 && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">$</span>
+                      </div>
+                      <input
+                        type="number"
+                        value={formData.historicalData[formData.historicalData.length - 1]?.ltm?.metrics?.ebitda ?? ''}
+                        onChange={(e) => handleLTMChange('ebitda', Number(e.target.value))}
+                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
+                        placeholder="0"
+                      />
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">thousands</span>
+                      </div>
                     </div>
-                    <input
-                      type="number"
-                      value={formData.historicalData[formData.historicalData.length - 1]?.ltm?.metrics?.ebitda ?? ''}
-                      onChange={(e) => handleLTMChange('ebitda', Number(e.target.value))}
-                      className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
-                      placeholder="0"
-                    />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">thousands</span>
-                    </div>
-                  </div>
-                </td>
+                  </td>
+                )}
               </tr>
             </tbody>
           </table>
@@ -227,7 +235,7 @@ export function FinancialDataForm({ formData, setFormData }: Props) {
             <thead>
               <tr className="bg-gradient-to-r from-primary to-primary-medium">
                 <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-32">Metric</th>
-                {formData.projectionData.map((data, index) => (
+                {formData.projectionData.map((_, index) => (
                   <th key={index} className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     {currentYear + index + 1}
                   </th>

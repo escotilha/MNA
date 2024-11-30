@@ -1,19 +1,25 @@
 import React from 'react';
-import { DealStructure, AcquisitionSchedule } from '../types/analysis';
+import { AnalysisFormData } from '../types/analysis';
 
 interface Props {
-  data: DealStructure;
-  onChange: (data: DealStructure) => void;
+  formData: AnalysisFormData;
+  setFormData: React.Dispatch<React.SetStateAction<AnalysisFormData>>;
 }
 
-export function DealStructureForm({ data, onChange }: Props) {
+export function DealStructureForm({ formData, setFormData }: Props) {
   const handleScheduleChange = (index: number, value: number) => {
-    const newSchedule = [...data.acquisitionSchedule];
+    const newSchedule = [...formData.dealStructure.acquisitionSchedule];
     newSchedule[index].percentage = value;
-    onChange({ ...data, acquisitionSchedule: newSchedule });
+    setFormData({
+      ...formData,
+      dealStructure: {
+        ...formData.dealStructure,
+        acquisitionSchedule: newSchedule
+      }
+    });
   };
 
-  const totalPercentage = data.acquisitionSchedule.reduce((sum, item) => sum + item.percentage, 0);
+  const totalPercentage = formData.dealStructure.acquisitionSchedule.reduce((sum, item) => sum + item.percentage, 0);
   const isValidSchedule = Math.abs(totalPercentage - 100) < 0.01;
 
   return (
@@ -27,11 +33,17 @@ export function DealStructureForm({ data, onChange }: Props) {
             step="0.1"
             min="0.1"
             placeholder="Enter multiple (e.g., 5.0)"
-            value={data.multiplePaid || ''}
+            value={formData.dealStructure.multiplePaid || ''}
             onChange={(e) => {
               const value = parseFloat(e.target.value);
               if (!isNaN(value) && value > 0) {
-                onChange({ ...data, multiplePaid: value });
+                setFormData({
+                  ...formData,
+                  dealStructure: {
+                    ...formData.dealStructure,
+                    multiplePaid: value
+                  }
+                });
               }
             }}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -45,8 +57,14 @@ export function DealStructureForm({ data, onChange }: Props) {
           <input
             type="number"
             step="0.1"
-            value={data.exitMultiple}
-            onChange={(e) => onChange({ ...data, exitMultiple: parseFloat(e.target.value) })}
+            value={formData.dealStructure.exitMultiple}
+            onChange={(e) => setFormData({
+              ...formData,
+              dealStructure: {
+                ...formData.dealStructure,
+                exitMultiple: parseFloat(e.target.value)
+              }
+            })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
@@ -59,9 +77,9 @@ export function DealStructureForm({ data, onChange }: Props) {
             <thead>
               <tr className="bg-gradient-to-r from-primary to-primary-medium">
                 <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-32">Metric</th>
-                {data.acquisitionSchedule.map((schedule) => (
-                  <th key={schedule.year} className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    Year {schedule.year}
+                {formData.dealStructure.acquisitionSchedule.map((schedule, index) => (
+                  <th key={schedule.date} className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    {index === 0 ? 'CLOSING' : new Date(schedule.date).getFullYear()}
                   </th>
                 ))}
               </tr>
@@ -69,8 +87,8 @@ export function DealStructureForm({ data, onChange }: Props) {
             <tbody className="bg-white divide-y divide-gray-200">
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Acquisition (%)</td>
-                {data.acquisitionSchedule.map((schedule, index) => (
-                  <td key={index} className="px-6 py-4 whitespace-nowrap">
+                {formData.dealStructure.acquisitionSchedule.map((schedule, index) => (
+                  <td key={schedule.date} className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="number"
                       min="0"

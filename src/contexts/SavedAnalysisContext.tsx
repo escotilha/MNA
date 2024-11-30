@@ -18,20 +18,10 @@ const initialState: SavedAnalysisState = {
 function savedAnalysisReducer(state: SavedAnalysisState, action: Action): SavedAnalysisState {
   switch (action.type) {
     case 'SAVE_ANALYSIS': {
-      const summary = {
-        valuation: action.payload.results.valuation,
-        enterpriseValue: action.payload.results.enterpriseValue,
-        ltmEbitda: action.payload.results.ltmEbitda,
-        irr: action.payload.results.returnMetrics.irr,
-        moic: action.payload.results.returnMetrics.moic,
-        paybackPeriod: action.payload.results.returnMetrics.paybackPeriod.years,
-      };
-      
       const newAnalysis: SavedAnalysis = {
         ...action.payload,
         id: uuidv4(),
         date: new Date().toISOString(),
-        summary,
       };
       const analyses = [...state.analyses, newAnalysis];
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(analyses));
@@ -44,7 +34,7 @@ function savedAnalysisReducer(state: SavedAnalysisState, action: Action): SavedA
     case 'LOAD_ANALYSIS': {
       const selectedAnalysis = state.analyses.find(
         (analysis) => analysis.id === action.payload
-      );
+      ) || null;
       return {
         ...state,
         selectedAnalysis,
@@ -74,7 +64,7 @@ function savedAnalysisReducer(state: SavedAnalysisState, action: Action): SavedA
 
 export const SavedAnalysisContext = createContext<SavedAnalysisContextType | undefined>(undefined);
 
-export function SavedAnalysisProvider({ children }: { children: React.ReactNode }) {
+export const SavedAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   console.log('SavedAnalysisProvider rendering');
   const [state, dispatch] = useReducer(savedAnalysisReducer, initialState);
 
@@ -84,18 +74,36 @@ export function SavedAnalysisProvider({ children }: { children: React.ReactNode 
     console.log('Saved analyses from localStorage:', savedAnalyses);
     if (savedAnalyses) {
       try {
-        const parsedAnalyses = JSON.parse(savedAnalyses);
-        console.log('Parsed analyses:', parsedAnalyses);
-        dispatch({ type: 'SET_ANALYSES', payload: parsedAnalyses });
+        dispatch({
+          type: 'SET_ANALYSES',
+          payload: JSON.parse(savedAnalyses),
+        });
       } catch (error) {
         console.error('Error parsing saved analyses:', error);
       }
     }
   }, []);
 
-  const saveAnalysis = (analysis: Omit<SavedAnalysis, 'id' | 'date'>) => {
-    console.log('Saving analysis:', analysis);
-    dispatch({ type: 'SAVE_ANALYSIS', payload: analysis });
+  const saveAnalysis = (analysis: Omit<SavedAnalysis, 'id' | 'date' | 'summary'>) => {
+    // Generate summary from results
+    const summary = {
+      valuation: analysis.results.valuation,
+      enterpriseValue: analysis.results.enterpriseValue,
+      ltmEbitda: analysis.results.ltmEbitda,
+      irr: analysis.results.returnMetrics.irr,
+      moic: analysis.results.returnMetrics.moic,
+      paybackPeriod: analysis.results.returnMetrics.paybackPeriod.years,
+    };
+
+    const analysisWithSummary: Omit<SavedAnalysis, 'id' | 'date'> = {
+      ...analysis,
+      summary,
+    };
+
+    dispatch({
+      type: 'SAVE_ANALYSIS',
+      payload: analysisWithSummary,
+    });
   };
 
   const loadAnalysis = (id: string) => {

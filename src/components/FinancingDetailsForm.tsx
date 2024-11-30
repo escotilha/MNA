@@ -1,18 +1,20 @@
 import React from 'react';
-import { FinancingDetails } from '../types/analysis';
+import { AnalysisFormData } from '../types/analysis';
 
 interface Props {
-  data: FinancingDetails;
-  onChange: (data: FinancingDetails) => void;
+  formData: AnalysisFormData;
+  setFormData: React.Dispatch<React.SetStateAction<AnalysisFormData>>;
 }
 
-export function FinancingDetailsForm({ data, onChange }: Props) {
+export function FinancingDetailsForm({ formData, setFormData }: Props) {
   const handleInterestRateChange = (newInterestRate: number) => {
-    // Update both interest rate and discount rate (130% of interest rate)
-    onChange({
-      ...data,
-      interestRate: newInterestRate,
-      discountRate: Number((newInterestRate * 1.3).toFixed(1))
+    setFormData({
+      ...formData,
+      financingDetails: {
+        ...formData.financingDetails,
+        interestRate: newInterestRate,
+        discountRate: Number((newInterestRate * 1.3).toFixed(1))
+      }
     });
   };
 
@@ -26,18 +28,38 @@ export function FinancingDetailsForm({ data, onChange }: Props) {
             type="number"
             min="0"
             max="100"
-            value={data.cashComponent}
-            onChange={(e) => onChange({ ...data, cashComponent: parseFloat(e.target.value) })}
+            value={formData.financingDetails.cashComponent}
+            onChange={(e) => {
+              const cashComponent = Number(e.target.value);
+              setFormData({
+                ...formData,
+                financingDetails: {
+                  ...formData.financingDetails,
+                  cashComponent,
+                  debtComponent: 100 - cashComponent
+                }
+              });
+            }}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Stock Component (%)</label>
+          <label className="block text-sm font-medium text-gray-700">Debt Component (%)</label>
           <input
             type="number"
-            value={100 - data.cashComponent}
-            disabled
-            className="mt-1 block w-full rounded-md bg-gray-100 border-gray-300 shadow-sm"
+            value={formData.financingDetails.debtComponent}
+            onChange={(e) => {
+              const debtComponent = Number(e.target.value);
+              setFormData({
+                ...formData,
+                financingDetails: {
+                  ...formData.financingDetails,
+                  debtComponent,
+                  cashComponent: 100 - debtComponent
+                }
+              });
+            }}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <div>
@@ -48,7 +70,7 @@ export function FinancingDetailsForm({ data, onChange }: Props) {
               step="0.1"
               min="0"
               max="100"
-              value={data.interestRate}
+              value={formData.financingDetails.interestRate}
               onChange={(e) => handleInterestRateChange(parseFloat(e.target.value))}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 pr-12"
             />
@@ -63,8 +85,8 @@ export function FinancingDetailsForm({ data, onChange }: Props) {
             type="number"
             min="1"
             max="30"
-            value={data.termYears}
-            onChange={(e) => onChange({ ...data, termYears: parseInt(e.target.value) })}
+            value={formData.financingDetails.termYears}
+            onChange={(e) => setFormData({ ...formData, financingDetails: { ...formData.financingDetails, termYears: parseInt(e.target.value) } })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
@@ -79,8 +101,8 @@ export function FinancingDetailsForm({ data, onChange }: Props) {
               step="0.1"
               min="0"
               max="100"
-              value={data.discountRate}
-              onChange={(e) => onChange({ ...data, discountRate: parseFloat(e.target.value) })}
+              value={formData.financingDetails.discountRate}
+              onChange={(e) => setFormData({ ...formData, financingDetails: { ...formData.financingDetails, discountRate: parseFloat(e.target.value) } })}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 pr-12"
               placeholder="e.g., 15.0"
             />

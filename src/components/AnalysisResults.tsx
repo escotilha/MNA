@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AnalysisResults, AnalysisFormData } from '../types/analysis';
 import { SensitivityAnalysis } from './SensitivityAnalysis';
@@ -219,17 +219,19 @@ export function AnalysisResultsView({ results, formData }: Props) {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">-{formatCurrency(results.enterpriseValue)}</td>
                 </tr>
-                {results.cashFlowGeneration.map((cf, index) => {
-                  const ebitda = results.projectedEbitda[index];
+                {results.cashFlowGeneration.map((_, index) => {
+                  const ebitda = results.projectedEbitda[index] || 0;
                   const operatingCashFlow = ebitda * (results.cashConversionRate / 100);
                   const debtService = results.debtService.yearlyPayments[index] || 0;
+                  const netCashFlow = operatingCashFlow - debtService;
+                  
                   return (
                     <tr key={index} className={index % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Year {index + 1}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(ebitda)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(operatingCashFlow)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(debtService)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(cf)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(netCashFlow)}</td>
                     </tr>
                   );
                 })}

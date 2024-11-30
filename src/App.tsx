@@ -1,8 +1,6 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import './styles/print.css';
-import { Building2, Calculator as CalculatorIcon } from 'lucide-react';
 import { CompanyOverviewForm } from './components/CompanyOverviewForm';
 import { FinancialDataForm } from './components/FinancialDataForm';
 import { DealStructureForm } from './components/DealStructureForm';
@@ -28,7 +26,6 @@ function MNACalculator() {
   const [showResults, setShowResults] = useState(false);
   const { state: { selectedAnalysis }, saveAnalysis } = useSavedAnalysis();
   const [loading, setLoading] = useState(true);
-  const [saveLoading, setSaveLoading] = useState(false);
   const [results, setResults] = useState<AnalysisResults | null>(null);
 
   console.log('MNACalculator state:', {
@@ -43,7 +40,8 @@ function MNACalculator() {
       projectName: 'Project Alpha',
       yearFounded: currentYear - 5,
       location: 'São Paulo',
-      industry: '',
+      industry: 'Technology',
+      cashConversionRate: 60,
     },
     historicalData: Array.from({ length: 3 }, (_, i) => ({
       year: currentYear - (3 - i),
@@ -52,30 +50,64 @@ function MNACalculator() {
         ebitda: Math.round(300 * Math.pow(1.3, i)),
       },
     })),
-    projectionData: Array.from({ length: 4 }, (_, i) => ({
-      year: currentYear + i + 1,
-      metrics: {
-        grossRevenue: 0,
-        ebitda: 0,
+    projectionData: [
+      {
+        year: currentYear + 1,
+        metrics: {
+          grossRevenue: 2000,
+          ebitda: 400,
+          netIncome: 300,
+          fcf: 240
+        }
       },
-    })),
+      {
+        year: currentYear + 2,
+        metrics: {
+          grossRevenue: 2400,
+          ebitda: 480,
+          netIncome: 360,
+          fcf: 288
+        }
+      },
+      {
+        year: currentYear + 3,
+        metrics: {
+          grossRevenue: 3000,
+          ebitda: 600,
+          netIncome: 450,
+          fcf: 360
+        }
+      },
+      {
+        year: currentYear + 4,
+        metrics: {
+          grossRevenue: 3600,
+          ebitda: 720,
+          netIncome: 540,
+          fcf: 432
+        }
+      }
+    ],
     kpis: {
       recurringRevenue: 0,
-      cashConversionRate: 50,
+      cashConversionRate: 60,
       employeeCount: 0,
       churnRate: 0,
     },
     dealStructure: {
-      multiplePaid: 0,
-      exitMultiple: 0,
-      acquisitionSchedule: [],
+      multiplePaid: 5.0,
+      exitMultiple: 6.0,
+      acquisitionSchedule: Array.from({ length: 5 }, (_, i) => ({
+        date: new Date(currentYear + 1 + i, 0, 1).toISOString(),
+        percentage: i === 0 ? 60 : 10,
+      })),
     },
     financingDetails: {
-      cashComponent: 0,
-      stockComponent: 0,
-      interestRate: 0,
+      cashComponent: 40,
+      debtComponent: 60,
+      interestRate: 8.0,
+      discountRate: 12,
       termYears: 5,
-      discountRate: 0,
     },
   };
 
@@ -85,204 +117,291 @@ function MNACalculator() {
     console.log('MNACalculator useEffect running');
     if (selectedAnalysis) {
       try {
-        setFormData({
-          companyOverview: selectedAnalysis.companyOverview,
-          historicalData: selectedAnalysis.historicalData,
-          projectionData: selectedAnalysis.projectionData,
-          kpis: selectedAnalysis.kpis,
+        const { results } = selectedAnalysis;
+        const newFormData: AnalysisFormData = {
+          companyOverview: {
+            projectName: selectedAnalysis.companyName,
+            yearFounded: new Date().getFullYear() - 5,
+            location: 'Not specified',
+            industry: selectedAnalysis.industry || 'Not specified',
+          },
+          historicalData: results.projectedEbitda.map((ebitda, index) => ({
+            year: new Date().getFullYear() - (results.projectedEbitda.length - index),
+            metrics: {
+              grossRevenue: ebitda * 3.33,
+              ebitda: ebitda,
+            },
+          })),
+          projectionData: results.projectedEbitda.map((ebitda, index) => ({
+            year: new Date().getFullYear() + index + 1,
+            metrics: {
+              grossRevenue: ebitda * 3.33,
+              ebitda: ebitda,
+            },
+          })),
+          kpis: {
+            recurringRevenue: 0,
+            cashConversionRate: 50,
+            employeeCount: 0,
+            churnRate: 0,
+          },
           dealStructure: {
-            multiplePaid: selectedAnalysis.results.dealStructure.multiplePaid,
-            exitMultiple: selectedAnalysis.results.dealStructure.exitMultiple,
-            acquisitionSchedule: selectedAnalysis.results.acquisitionSchedule,
+            multiplePaid: results.dealStructure.multiplePaid,
+            exitMultiple: results.dealStructure.exitMultiple,
+            acquisitionSchedule: results.acquisitionSchedule || [],
           },
           financingDetails: {
-            cashComponent: selectedAnalysis.results.dealStructure.equityComponent,
-            stockComponent: selectedAnalysis.results.dealStructure.debtComponent,
-            interestRate: selectedAnalysis.results.dealStructure.discountRate,
+            cashComponent: results.dealStructure.equityComponent,
+            debtComponent: results.dealStructure.debtComponent,
+            interestRate: 5,
             termYears: 5,
-            discountRate: selectedAnalysis.results.dealStructure.discountRate,
+            discountRate: results.dealStructure.discountRate,
           },
-        });
-        setResults(selectedAnalysis.results);
+        };
+        console.log('Setting form data from selected analysis:', newFormData);
+        setFormData(newFormData);
+        setResults(results);
         setShowResults(true);
+        setLoading(false);
       } catch (error) {
         console.error('Error setting form data:', error);
         toast.error('Error loading analysis data');
+        setLoading(false);
       }
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, [selectedAnalysis]);
 
   const calculateResults = () => {
     try {
-      // Get LTM EBITDA from the last historical year
-      const ltmEbitda = formData.historicalData[formData.historicalData.length - 1].metrics.ebitda;
+      console.log('Starting calculation with form data:', formData);
 
-      // Calculate valuation
-      const valuation = calculateValuation(ltmEbitda, formData.dealStructure.multiplePaid);
+      // Validate company overview
+      if (!formData.companyOverview.projectName) {
+        throw new Error('Project name is required');
+      }
+      if (!formData.companyOverview.industry) {
+        throw new Error('Industry is required');
+      }
 
-      // Calculate debt service based on financing structure
-      const debtService = calculateDebtService(
-        valuation * (formData.financingDetails.stockComponent / 100),
-        formData.financingDetails.interestRate,
-        formData.financingDetails.termYears
-      );
+      // Validate historical data
+      if (!formData.historicalData || formData.historicalData.length === 0) {
+        throw new Error('Historical data is required');
+      }
+      
+      const latestEbitda = formData.historicalData[formData.historicalData.length - 1]?.metrics?.ebitda;
+      if (!latestEbitda || !Number.isFinite(latestEbitda)) {
+        throw new Error('Invalid EBITDA value in historical data');
+      }
+      console.log('Latest EBITDA:', latestEbitda);
 
-      // Project cash flows
-      const projectedEbitda = [
-        ...formData.historicalData.map(year => year.metrics.ebitda),
-        ...formData.projectionData.map(year => year.metrics.ebitda),
-      ];
+      // Validate deal structure
+      if (!formData.dealStructure.multiplePaid || !Number.isFinite(formData.dealStructure.multiplePaid)) {
+        throw new Error('Invalid multiple paid value');
+      }
+      if (!formData.dealStructure.exitMultiple || !Number.isFinite(formData.dealStructure.exitMultiple)) {
+        throw new Error('Invalid exit multiple value');
+      }
+      
+      // Validate financing details
+      if (!formData.financingDetails.cashComponent || !Number.isFinite(formData.financingDetails.cashComponent)) {
+        throw new Error('Invalid cash component value');
+      }
+      if (!formData.financingDetails.debtComponent || !Number.isFinite(formData.financingDetails.debtComponent)) {
+        throw new Error('Invalid debt component value');
+      }
+      if (formData.financingDetails.cashComponent + formData.financingDetails.debtComponent !== 100) {
+        throw new Error('Cash and debt components must sum to 100%');
+      }
+      if (!formData.financingDetails.interestRate || !Number.isFinite(formData.financingDetails.interestRate)) {
+        throw new Error('Invalid interest rate value');
+      }
+      if (!formData.financingDetails.termYears || !Number.isFinite(formData.financingDetails.termYears)) {
+        throw new Error('Invalid term years value');
+      }
+      if (!formData.financingDetails.discountRate || !Number.isFinite(formData.financingDetails.discountRate)) {
+        throw new Error('Invalid discount rate value');
+      }
 
-      // Calculate IRR
-      const irr = calculateIRR(projectedEbitda, valuation);
-
-      // Calculate MOIC
-      const moic = calculateMOIC(projectedEbitda, valuation);
-
-      // Calculate payback period
-      const paybackPeriod = calculatePaybackPeriod(projectedEbitda, valuation);
-
-      const results: AnalysisResults = {
-        valuation,
-        projectedEbitda,
-        irr,
-        moic,
-        paybackPeriod,
-        dealStructure: {
-          multiplePaid: formData.dealStructure.multiplePaid,
-          exitMultiple: formData.dealStructure.exitMultiple,
-          equityComponent: formData.financingDetails.cashComponent,
-          debtComponent: formData.financingDetails.stockComponent,
-          discountRate: formData.financingDetails.discountRate,
-        },
-        debtService,
-        acquisitionSchedule: formData.dealStructure.acquisitionSchedule,
-      };
-
-      setResults(results);
-      setShowResults(true);
-    } catch (error) {
-      console.error('Error calculating results:', error);
-      toast.error('Error calculating results. Please check your inputs.');
-    }
-  };
-
-  const handleSaveAnalysis = async () => {
-    if (!results) {
-      toast.error('Please calculate results before saving');
-      return;
-    }
-
-    try {
-      setSaveLoading(true);
-      saveAnalysis({
-        companyName: formData.companyOverview.projectName || '',
-        industry: formData.companyOverview.industry || '',
-        results,
+      // Validate projection data
+      if (!formData.projectionData || formData.projectionData.length === 0) {
+        throw new Error('Projection data is required');
+      }
+      formData.projectionData.forEach((year, index) => {
+        if (!year.metrics.ebitda || !Number.isFinite(year.metrics.ebitda)) {
+          throw new Error(`Invalid EBITDA value in projection year ${index + 1}`);
+        }
       });
-      toast.success('Analysis saved successfully!');
+
+      try {
+        // Calculate valuation
+        const valuation = calculateValuation(latestEbitda, formData.dealStructure.multiplePaid);
+        console.log('Valuation:', valuation);
+
+        // Calculate debt service
+        const debtAmount = valuation * (formData.financingDetails.debtComponent / 100);
+        const debtServiceResult = calculateDebtService(
+          debtAmount,
+          formData.financingDetails.interestRate,
+          formData.financingDetails.termYears
+        );
+        console.log('Debt service result:', debtServiceResult);
+
+        // Get projected cash flows
+        const projectedCashFlows = formData.projectionData.map(year => year.metrics.ebitda);
+        console.log('Projected cash flows:', projectedCashFlows);
+        
+        // Calculate initial investment (negative) and add projected cash flows
+        const investmentCashFlows = [-valuation, ...projectedCashFlows];
+        console.log('Investment cash flows before terminal value:', investmentCashFlows);
+        
+        // Add terminal value to the last cash flow
+        const terminalValue = projectedCashFlows[projectedCashFlows.length - 1] * formData.dealStructure.exitMultiple;
+        investmentCashFlows[investmentCashFlows.length - 1] += terminalValue;
+        console.log('Terminal value:', terminalValue);
+        console.log('Final investment cash flows:', investmentCashFlows);
+
+        // Calculate IRR and other metrics
+        const irr = calculateIRR(investmentCashFlows);
+        console.log('IRR:', irr);
+
+        const totalReturn = investmentCashFlows.reduce((sum, cf) => sum + cf, 0);
+        const moic = calculateMOIC(totalReturn, valuation);
+        console.log('MOIC:', moic);
+
+        const paybackPeriod = calculatePaybackPeriod(investmentCashFlows);
+        console.log('Payback period:', paybackPeriod);
+
+        const results: AnalysisResults = {
+          valuation,
+          enterpriseValue: valuation,
+          ltmEbitda: latestEbitda,
+          firstYearEbitda: formData.projectionData[0].metrics.ebitda,
+          projectedEbitda: projectedCashFlows,
+          cashFlowGeneration: projectedCashFlows.map(ebitda => ebitda * 0.7),
+          debtService: {
+            monthlyPayment: debtServiceResult.yearlyPayments[0] / 12,
+            annualPayment: debtServiceResult.yearlyPayments[0],
+            totalInterest: debtServiceResult.totalInterest,
+            totalPayment: debtServiceResult.totalPayment,
+            schedule: debtServiceResult.yearlyPayments.map((yearlyPayment, index) => {
+              const remainingYears = formData.financingDetails.termYears - index;
+              const remainingPayments = yearlyPayment * remainingYears;
+              return {
+                year: index + 1,
+                payment: yearlyPayment,
+                interest: yearlyPayment * (formData.financingDetails.interestRate / 100),
+                principal: yearlyPayment * (1 - formData.financingDetails.interestRate / 100),
+                remainingBalance: Math.max(0, debtServiceResult.totalPayment - yearlyPayment * (index + 1))
+              };
+            })
+          },
+          netCashPosition: 0,
+          dealStructure: {
+            exitMultiple: formData.dealStructure.exitMultiple,
+            equityComponent: 100 - formData.financingDetails.debtComponent,
+            debtComponent: formData.financingDetails.debtComponent,
+            multiplePaid: formData.dealStructure.multiplePaid,
+            discountRate: formData.financingDetails.discountRate
+          },
+          acquisitionSchedule: formData.dealStructure.acquisitionSchedule,
+          returnMetrics: {
+            irr,
+            moic,
+            paybackPeriod
+          },
+          riskMetrics: {
+            debtServiceCoverage: projectedCashFlows[0] / debtServiceResult.yearlyPayments[0],
+            interestCoverage: projectedCashFlows[0] / (debtServiceResult.totalInterest / formData.financingDetails.termYears),
+            debtToEbitda: (valuation * formData.financingDetails.debtComponent / 100) / projectedCashFlows[0]
+          },
+          npv: investmentCashFlows.reduce((npv, cf, year) => 
+            npv + cf / Math.pow(1 + formData.financingDetails.discountRate / 100, year), 0)
+        };
+
+        setResults(results);
+        setShowResults(true);
+        
+        // Save the analysis
+        saveAnalysis({
+          companyName: formData.companyOverview.projectName,
+          industry: formData.companyOverview.industry,
+          results
+        });
+
+      } catch (error) {
+        console.error('Error in calculation:', error);
+        toast.error(error instanceof Error ? error.message : 'Error calculating analysis results');
+      }
     } catch (error) {
-      console.error('Failed to save analysis:', error);
-      toast.error('Failed to save analysis. Please try again.');
-    } finally {
-      setSaveLoading(false);
+      console.error('Error in form validation:', error);
+      toast.error(error instanceof Error ? error.message : 'Error validating form data');
     }
   };
-
-  if (loading) {
-    console.log('Rendering loading state');
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  console.log('Rendering main component');
-  console.log('Form Data:', formData);
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Forms */}
-        {!showResults ? (
-          <>
-            <CompanyOverviewForm
-              formData={formData}
-              setFormData={setFormData}
-            />
-            <FinancialDataForm
-              formData={formData}
-              setFormData={setFormData}
-            />
-            <DealStructureForm
-              formData={formData}
-              setFormData={setFormData}
-            />
-            <FinancingDetailsForm
-              formData={formData}
-              setFormData={setFormData}
-            />
-            <div className="flex justify-end mt-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          {!showResults ? (
+            <>
+              <CompanyOverviewForm
+                formData={formData}
+                setFormData={setFormData}
+              />
+              <FinancialDataForm
+                formData={formData}
+                setFormData={setFormData}
+              />
+              <DealStructureForm
+                formData={formData}
+                setFormData={setFormData}
+              />
+              <FinancingDetailsForm
+                formData={formData}
+                setFormData={setFormData}
+              />
               <button
                 onClick={calculateResults}
-                className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Calculate Results
               </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="mb-6 flex justify-end space-x-4">
-              <button
-                onClick={handleSaveAnalysis}
-                disabled={saveLoading}
-                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${
-                  saveLoading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {saveLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
-                  </>
-                ) : (
-                  'Save Analysis'
-                )}
-              </button>
-              <button
-                onClick={() => setShowResults(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-              >
-                Back to Edit
-              </button>
-            </div>
-            {results && <AnalysisResultsView results={results} />}
-          </>
-        )}
+            </>
+          ) : results ? (
+            <AnalysisResultsView
+              results={results}
+              formData={formData}
+            />
+          ) : null}
+        </div>
       </div>
     </div>
   );
 }
 
-function ProtectedLayout({ children }: { children: React.ReactNode }) {
+interface ProtectedLayoutProps {
+  children: React.ReactNode;
+}
+
+function ProtectedLayout(props: ProtectedLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {children}
+        {props.children}
       </main>
     </div>
   );
 }
 
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props: { children: React.ReactNode }) {
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasError: boolean; error: Error | null }> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }

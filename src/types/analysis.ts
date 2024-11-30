@@ -3,6 +3,7 @@ export interface CompanyOverview {
   yearFounded: number;
   location: string;
   industry: string;
+  cashConversionRate: number;
 }
 
 export interface FinancialMetrics {
@@ -10,7 +11,8 @@ export interface FinancialMetrics {
   ebitda: number;
 }
 
-export interface LTMMetrics extends FinancialMetrics {
+export interface LTMMetrics {
+  metrics: FinancialMetrics;
   calculatedFrom: {
     startDate: string;
     endDate: string;
@@ -48,7 +50,7 @@ export interface DealStructure {
 
 export interface FinancingDetails {
   cashComponent: number;
-  stockComponent: number;
+  debtComponent: number;
   interestRate: number;
   termYears: number;
   discountRate: number;
@@ -80,6 +82,7 @@ export interface DebtServiceResult {
   annualPayment: number;
   totalInterest: number;
   totalPayment: number;
+  yearlyPayments: number[];
   schedule: Array<{
     year: number;
     payment: number;
@@ -113,4 +116,5 @@ export interface AnalysisResults {
     debtToEbitda: number;
   };
   npv: number;
+  cashConversionRate: number;
 }

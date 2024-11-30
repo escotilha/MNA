@@ -46,11 +46,17 @@ const validators = {
  * @returns Enterprise value in thousands
  */
 export function calculateValuation(ebitda: number, multiple: number): number {
-  validators.isPositive(ebitda, 'EBITDA');
-  validators.isPositive(multiple, 'Multiple');
-  
-  // Both EBITDA and result are in thousands
-  return Number((ebitda * multiple).toFixed(2));
+  console.log('calculateValuation input:', { ebitda, multiple });
+  try {
+    validators.isPositive(ebitda, 'EBITDA');
+    validators.isPositive(multiple, 'Multiple');
+    const result = Number((ebitda * multiple).toFixed(2));
+    console.log('calculateValuation result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error in calculateValuation:', error);
+    throw error;
+  }
 }
 
 interface DebtServiceResult {
@@ -71,31 +77,68 @@ export function calculateDebtService(
   interestRate: number,
   termYears: number
 ): DebtServiceResult {
-  validators.isPositive(principal, 'Principal');
-  validators.isValidRate(interestRate, 'Interest rate');
-  validators.isPositive(termYears, 'Term years');
+  console.log('calculateDebtService input:', { principal, interestRate, termYears });
+  try {
+    // Validate inputs
+    if (!Number.isFinite(principal) || principal <= 0) {
+      throw new Error('Principal must be a positive number');
+    }
+    if (!Number.isFinite(interestRate) || interestRate <= 0 || interestRate >= 100) {
+      throw new Error('Interest rate must be between 0 and 100');
+    }
+    if (!Number.isFinite(termYears) || termYears <= 0) {
+      throw new Error('Term years must be a positive number');
+    }
 
-  const monthlyRate = interestRate / 12 / 100;
-  const totalMonths = termYears * 12;
-  
-  // Calculate monthly payment (in thousands)
-  const monthlyPayment = principal * monthlyRate / (1 - Math.exp(-totalMonths * Math.log(1 + monthlyRate)));
-  
-  if (!Number.isFinite(monthlyPayment)) {
-    throw new FinancialCalculationError('Monthly payment calculation overflow - check your inputs');
+    const monthlyRate = interestRate / 12 / 100;
+    console.log('Monthly rate:', monthlyRate);
+    const totalMonths = termYears * 12;
+    
+    // Calculate monthly payment using standard loan payment formula
+    // PMT = P * (r * (1 + r)^n) / ((1 + r)^n - 1)
+    // where P = principal, r = monthly rate, n = total months
+    const monthlyPayment = principal * 
+      (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / 
+      (Math.pow(1 + monthlyRate, totalMonths) - 1);
+    
+    console.log('Monthly payment:', monthlyPayment);
+    
+    if (!Number.isFinite(monthlyPayment) || monthlyPayment <= 0) {
+      throw new Error('Invalid monthly payment calculation');
+    }
+
+    // Calculate yearly payments
+    const yearlyPayment = monthlyPayment * 12;
+    const yearlyPayments = Array.from({ length: termYears }, () => Number(yearlyPayment.toFixed(2)));
+    
+    // Calculate total amounts
+    const totalPayment = yearlyPayment * termYears;
+    const totalInterest = totalPayment - principal;
+
+    const result = {
+      yearlyPayments,
+      totalInterest: Number(totalInterest.toFixed(2)),
+      totalPayment: Number(totalPayment.toFixed(2))
+    };
+
+    console.log('Debt service result:', result);
+    
+    // Validate result
+    if (!result.yearlyPayments || result.yearlyPayments.length === 0) {
+      throw new Error('Failed to calculate yearly payments');
+    }
+    if (!Number.isFinite(result.totalInterest)) {
+      throw new Error('Invalid total interest calculation');
+    }
+    if (!Number.isFinite(result.totalPayment)) {
+      throw new Error('Invalid total payment calculation');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error in calculateDebtService:', error);
+    throw error;
   }
-
-  // Convert monthly to yearly (still in thousands)
-  const yearlyPayments = Array(termYears).fill(monthlyPayment * 12);
-  const totalPayment = monthlyPayment * totalMonths;
-  const totalInterest = totalPayment - principal;
-
-  // Round only the final results
-  return {
-    yearlyPayments: yearlyPayments.map(payment => Number(payment.toFixed(2))),
-    totalInterest: Number(totalInterest.toFixed(2)),
-    totalPayment: Number(totalPayment.toFixed(2))
-  };
 }
 
 /**
@@ -105,48 +148,58 @@ export function calculateDebtService(
  * @throws {FinancialCalculationError} If IRR calculation doesn't converge
  */
 export function calculateIRR(cashFlows: number[]): number {
-  validators.isValidArray(cashFlows, 'Cash flows');
-  
-  const guess = 0.1;
-  const maxIterations = 1000;
-  const tolerance = 0.00001;
-  let irr = guess;
-
-  for (let i = 0; i < maxIterations; i++) {
-    let npv = 0;
-    let derivativeNpv = 0;
-
-    for (let j = 0; j < cashFlows.length; j++) {
-      const denominator = Math.pow(1 + irr, j);
-      if (!Number.isFinite(denominator) || denominator === 0) {
-        throw new FinancialCalculationError('IRR calculation overflow - try a different initial guess');
-      }
-      npv += cashFlows[j] / denominator;
-      if (j > 0) {
-        derivativeNpv -= (j * cashFlows[j]) / (denominator * (1 + irr));
-      }
-    }
-
-    // Handle near-zero derivative more gracefully
-    if (Math.abs(derivativeNpv) < tolerance) {
-      if (Math.abs(npv) < tolerance) {
-        return Number((irr * 100).toFixed(2)); // Convert to percentage
-      }
-      // Try a different guess if we're stuck
-      irr = guess * 2;
-      continue;
-    }
-
-    const newIrr = irr - npv / derivativeNpv;
+  console.log('calculateIRR input:', cashFlows);
+  try {
+    validators.isValidArray(cashFlows, 'Cash flows');
     
-    if (Math.abs(newIrr - irr) < tolerance) {
-      return Number((newIrr * 100).toFixed(2)); // Convert to percentage
+    const guess = 0.1;
+    const maxIterations = 1000;
+    const tolerance = 0.00001;
+    let irr = guess;
+
+    for (let i = 0; i < maxIterations; i++) {
+      let npv = 0;
+      let derivativeNpv = 0;
+
+      for (let j = 0; j < cashFlows.length; j++) {
+        const denominator = Math.pow(1 + irr, j);
+        if (!Number.isFinite(denominator) || denominator === 0) {
+          throw new FinancialCalculationError('IRR calculation overflow - try a different initial guess');
+        }
+        npv += cashFlows[j] / denominator;
+        if (j > 0) {
+          derivativeNpv -= (j * cashFlows[j]) / (denominator * (1 + irr));
+        }
+      }
+
+      // Handle near-zero derivative more gracefully
+      if (Math.abs(derivativeNpv) < tolerance) {
+        if (Math.abs(npv) < tolerance) {
+          const result = Number((irr * 100).toFixed(2));
+          console.log('calculateIRR result:', result);
+          return result; // Convert to percentage
+        }
+        // Try a different guess if we're stuck
+        irr = guess * 2;
+        continue;
+      }
+
+      const newIrr = irr - npv / derivativeNpv;
+      
+      if (Math.abs(newIrr - irr) < tolerance) {
+        const result = Number((newIrr * 100).toFixed(2));
+        console.log('calculateIRR result:', result);
+        return result; // Convert to percentage
+      }
+      
+      irr = newIrr;
     }
-    
-    irr = newIrr;
+
+    throw new FinancialCalculationError('IRR calculation exceeded maximum iterations');
+  } catch (error) {
+    console.error('Error in calculateIRR:', error);
+    throw error;
   }
-
-  throw new FinancialCalculationError('IRR calculation exceeded maximum iterations');
 }
 
 /**
@@ -156,8 +209,16 @@ export function calculateIRR(cashFlows: number[]): number {
  * @returns MOIC ratio (unitless)
  */
 export function calculateMOIC(totalReturn: number, initialInvestment: number): number {
-  validators.isPositive(initialInvestment, 'Initial investment');
-  return Number((totalReturn / initialInvestment).toFixed(2));
+  console.log('calculateMOIC input:', { totalReturn, initialInvestment });
+  try {
+    validators.isPositive(initialInvestment, 'Initial investment');
+    const result = Number((totalReturn / initialInvestment).toFixed(2));
+    console.log('calculateMOIC result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error in calculateMOIC:', error);
+    throw error;
+  }
 }
 
 interface PaybackPeriodResult {
@@ -172,27 +233,37 @@ interface PaybackPeriodResult {
  * @returns Object containing payback period details
  */
 export function calculatePaybackPeriod(cashFlows: number[]): PaybackPeriodResult {
-  validators.isValidArray(cashFlows, 'Cash flows');
-  
-  let remainingBalance = -cashFlows[0];  // Initial investment (in thousands)
-  let years = 0;
-  
-  for (let i = 1; i < cashFlows.length; i++) {
-    remainingBalance += cashFlows[i];
-    if (remainingBalance >= 0) {
-      return {
-        years: i,
-        isAchieved: true
-      };
+  console.log('calculatePaybackPeriod input:', cashFlows);
+  try {
+    validators.isValidArray(cashFlows, 'Cash flows');
+    
+    let remainingBalance = -cashFlows[0];  // Initial investment (in thousands)
+    let years = 0;
+    
+    for (let i = 1; i < cashFlows.length; i++) {
+      remainingBalance += cashFlows[i];
+      if (remainingBalance >= 0) {
+        const result = {
+          years: i,
+          isAchieved: true
+        };
+        console.log('calculatePaybackPeriod result:', result);
+        return result;
+      }
+      years = i;
     }
-    years = i;
+    
+    const result = {
+      years,
+      isAchieved: false,
+      remainingBalance: Math.abs(remainingBalance)
+    };
+    console.log('calculatePaybackPeriod result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error in calculatePaybackPeriod:', error);
+    throw error;
   }
-  
-  return {
-    years,
-    isAchieved: false,
-    remainingBalance: Math.abs(remainingBalance)
-  };
 }
 
 interface HistoricalData {
@@ -218,23 +289,29 @@ interface LTMMetrics {
  * @returns LTM metrics or null if insufficient data
  */
 export function calculateLTM(historicalData: HistoricalData[]): LTMMetrics | null {
-  if (!historicalData || historicalData.length < 4) {
-    return null;
-  }
-
-  // Sort data by year to ensure correct order
-  const sortedData = [...historicalData].sort((a, b) => a.year - b.year);
-  const lastYear = sortedData[sortedData.length - 1];
-  
-  // Calculate LTM metrics
-  const ltmMetrics: LTMMetrics = {
-    grossRevenue: lastYear.metrics.grossRevenue,
-    ebitda: lastYear.metrics.ebitda,
-    calculatedFrom: {
-      startDate: `${lastYear.year}-01-01`,
-      endDate: `${lastYear.year}-12-31`
+  console.log('calculateLTM input:', historicalData);
+  try {
+    if (!historicalData || historicalData.length < 4) {
+      return null;
     }
-  };
 
-  return ltmMetrics;
+    // Sort data by year to ensure correct order
+    const sortedData = [...historicalData].sort((a, b) => a.year - b.year);
+    const lastYear = sortedData[sortedData.length - 1];
+    
+    // Calculate LTM metrics
+    const ltmMetrics: LTMMetrics = {
+      grossRevenue: lastYear.metrics.grossRevenue,
+      ebitda: lastYear.metrics.ebitda,
+      calculatedFrom: {
+        startDate: `${lastYear.year}-01-01`,
+        endDate: `${lastYear.year}-12-31`
+      }
+    };
+    console.log('calculateLTM result:', ltmMetrics);
+    return ltmMetrics;
+  } catch (error) {
+    console.error('Error in calculateLTM:', error);
+    throw error;
+  }
 }
