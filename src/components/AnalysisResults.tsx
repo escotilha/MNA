@@ -53,13 +53,21 @@ export function AnalysisResultsView({ results, formData }: Props) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white">Analysis Results</h2>
-        <button
-          onClick={handlePrintReport}
-          className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
-        >
-          <FileDown className="mr-2 h-5 w-5" />
-          Print PDF Report
-        </button>
+        <div className="flex gap-4">
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+          >
+            New Calculation
+          </button>
+          <button
+            onClick={handlePrintReport}
+            className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
+          >
+            <FileDown className="mr-2 h-5 w-5" />
+            Print PDF Report
+          </button>
+        </div>
       </div>
 
       <div className="bg-white/90 backdrop-blur-glass shadow-glass rounded-xl p-6">
