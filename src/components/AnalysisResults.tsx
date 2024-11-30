@@ -65,7 +65,7 @@ export function AnalysisResultsView({ results, formData }: Props) {
             className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-xl shadow-glass text-white bg-primary-medium hover:bg-primary-medium/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
           >
             <FileDown className="mr-2 h-5 w-5" />
-            Print PDF Report
+            Download PDF Report
           </button>
         </div>
       </div>

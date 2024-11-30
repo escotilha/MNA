@@ -276,8 +276,13 @@ export const generatePDFReport = async (formData: AnalysisFormData, results: Ana
     yPos = addBulletPoint(`Debt: ${formatPercent(results.dealStructure.debtComponent)}`, yPos);
     yPos = addBulletPoint(`Interest Rate: ${formatPercent(formData.financingDetails.interestRate)}`, yPos);
 
-    // Save the PDF
-    const filename = `${formData.companyOverview.projectName.replace(/\s+/g, '_')}_MA_Analysis.pdf`;
+    // Save the PDF with a professional filename
+    const getFormattedDate = () => {
+      const date = new Date();
+      return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    };
+
+    const filename = `${formData.companyOverview.projectName.replace(/\s+/g, '_')}_MA_Analysis_${getFormattedDate()}.pdf`;
     doc.save(filename);
 
   } catch (error) {
