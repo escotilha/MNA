@@ -4,6 +4,7 @@ import { AnalysisResults, AnalysisFormData } from '../types/analysis';
 import { SensitivityAnalysis } from './SensitivityAnalysis';
 import { ConsultingRecommendation } from './ConsultingRecommendation';
 import { FileDown } from 'lucide-react';
+import { generatePDFReport } from './PDFReport';
 
 interface Props {
   results: AnalysisResults;
@@ -40,12 +41,11 @@ export function AnalysisResultsView({ results, formData }: Props) {
     return `$${inMillions.toFixed(2)}M`;
   };
 
-  const handlePrintReport = () => {
+  const handlePrintReport = async () => {
     try {
-      window.print();
+      await generatePDFReport(formData, results);
     } catch (error) {
-      console.error('Failed to print report:', error);
-      alert('Failed to print report: ' + (error as Error).message);
+      console.error('Error generating PDF report:', error);
     }
   };
 
