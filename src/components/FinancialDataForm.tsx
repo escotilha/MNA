@@ -7,6 +7,8 @@ interface Props {
 }
 
 export function FinancialDataForm({ formData, setFormData }: Props) {
+  console.log('FinancialDataForm rendering with data:', formData);
+
   const handleHistoricalChange = (index: number, field: string, value: number) => {
     const newHistoricalData = [...formData.historicalData];
     newHistoricalData[index] = {
@@ -47,6 +49,42 @@ export function FinancialDataForm({ formData, setFormData }: Props) {
     });
   };
 
+  const handleFinancingChange = (field: keyof typeof formData.financingDetails, value: number) => {
+    setFormData({
+      ...formData,
+      financingDetails: {
+        ...formData.financingDetails,
+        [field]: value,
+      },
+    });
+  };
+
+  const handleLTMChange = (field: string, value: number) => {
+    const newHistoricalData = [...formData.historicalData];
+    const lastIndex = formData.historicalData.length - 1;
+    
+    // Ensure LTM object exists
+    if (!newHistoricalData[lastIndex].ltm) {
+      newHistoricalData[lastIndex].ltm = {
+        metrics: {
+          grossRevenue: newHistoricalData[lastIndex].metrics.grossRevenue,
+          ebitda: newHistoricalData[lastIndex].metrics.ebitda
+        },
+        calculatedFrom: {
+          startDate: `${new Date().getFullYear()}-01-01`,
+          endDate: `${new Date().getFullYear()}-12-31`
+        }
+      };
+    }
+    
+    // Update the specific field
+    newHistoricalData[lastIndex].ltm.metrics[field as keyof typeof newHistoricalData[typeof lastIndex]['ltm']['metrics']] = value;
+    setFormData({
+      ...formData,
+      historicalData: newHistoricalData,
+    });
+  };
+
   const currentYear = new Date().getFullYear();
 
   // Initialize LTM values when historical data changes or component mounts
@@ -78,32 +116,6 @@ export function FinancialDataForm({ formData, setFormData }: Props) {
       }
     }
   }, [formData.historicalData, currentYear, setFormData]);
-
-  const handleLTMChange = (field: string, value: number) => {
-    const newHistoricalData = [...formData.historicalData];
-    const lastIndex = formData.historicalData.length - 1;
-    
-    // Ensure LTM object exists
-    if (!newHistoricalData[lastIndex].ltm) {
-      newHistoricalData[lastIndex].ltm = {
-        metrics: {
-          grossRevenue: newHistoricalData[lastIndex].metrics.grossRevenue,
-          ebitda: newHistoricalData[lastIndex].metrics.ebitda
-        },
-        calculatedFrom: {
-          startDate: `${currentYear}-01-01`,
-          endDate: `${currentYear}-12-31`
-        }
-      };
-    }
-    
-    // Update the specific field
-    newHistoricalData[lastIndex].ltm.metrics[field as keyof typeof newHistoricalData[typeof lastIndex]['ltm']['metrics']] = value;
-    setFormData({
-      ...formData,
-      historicalData: newHistoricalData,
-    });
-  };
 
   return (
     <div className="space-y-6">
@@ -308,6 +320,57 @@ export function FinancialDataForm({ formData, setFormData }: Props) {
               type="number"
               value={formData.kpis.churnRate}
               onChange={(e) => handleKPIChange('churnRate', Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Financing Details</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Cash Component (%)</label>
+            <input
+              type="number"
+              value={formData.financingDetails.cashComponent}
+              onChange={(e) => handleFinancingChange('cashComponent', Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Stock Component (%)</label>
+            <input
+              type="number"
+              value={formData.financingDetails.stockComponent}
+              onChange={(e) => handleFinancingChange('stockComponent', Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Interest Rate (%)</label>
+            <input
+              type="number"
+              value={formData.financingDetails.interestRate}
+              onChange={(e) => handleFinancingChange('interestRate', Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Term (Years)</label>
+            <input
+              type="number"
+              value={formData.financingDetails.termYears}
+              onChange={(e) => handleFinancingChange('termYears', Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Discount Rate (%)</label>
+            <input
+              type="number"
+              value={formData.financingDetails.discountRate}
+              onChange={(e) => handleFinancingChange('discountRate', Number(e.target.value))}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
