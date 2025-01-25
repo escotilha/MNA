@@ -1,21 +1,9 @@
 import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { Building2, Calculator, LayoutDashboard, LogOut } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Building2, Calculator, LayoutDashboard } from 'lucide-react';
 
 export function Navbar() {
-  const { signOut } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/login');
-    } catch (error) {
-      console.error('Failed to sign out:', error);
-    }
-  };
 
   return (
     <nav className="bg-white shadow-md">
@@ -50,15 +38,6 @@ export function Navbar() {
                 Calculator
               </Link>
             </div>
-          </div>
-          <div className="flex items-center">
-            <button
-              onClick={handleSignOut}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <LogOut className="h-5 w-5 mr-1" />
-              Sign Out
-            </button>
           </div>
         </div>
       </div>

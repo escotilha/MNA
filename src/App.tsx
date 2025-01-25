@@ -6,11 +6,7 @@ import { FinancialDataForm } from './components/FinancialDataForm';
 import { DealStructureForm } from './components/DealStructureForm';
 import { FinancingDetailsForm } from './components/FinancingDetailsForm';
 import { AnalysisResultsView } from './components/AnalysisResults';
-import { LoginForm } from './components/auth/LoginForm';
-import { SignUpForm } from './components/auth/SignUpForm';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Navbar } from './components/navigation/Navbar';
-import { AuthProvider } from './contexts/AuthContext';
 import { SavedAnalysisProvider, useSavedAnalysis } from './contexts/SavedAnalysisContext';
 import { AnalysisFormData, AnalysisResults } from './types/analysis';
 import { calculateValuation, calculateDebtService, calculateIRR, calculateMOIC, calculatePaybackPeriod } from './utils/calculations';
@@ -457,32 +453,21 @@ function App() {
   console.log('App component rendering');
   return (
     <ErrorBoundary>
-      <Router>
-        <AuthProvider>
-          <SavedAnalysisProvider>
-            <div className="min-h-screen bg-gray-50">
-              <Toaster position="top-right" />
-              <Routes>
-                <Route path="/login" element={<LoginForm />} />
-                <Route path="/signup" element={<SignUpForm />} />
-                <Route
-                  element={
-                    <ProtectedRoute>
-                      <ProtectedLayout>
-                        <Outlet />
-                      </ProtectedLayout>
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route path="/calculator" element={<MNACalculator />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                </Route>
-              </Routes>
-            </div>
-          </SavedAnalysisProvider>
-        </AuthProvider>
-      </Router>
+      <SavedAnalysisProvider>
+        <Router>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<MNACalculator />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/company-overview" element={<CompanyOverviewForm />} />
+            <Route path="/financial-data" element={<FinancialDataForm />} />
+            <Route path="/deal-structure" element={<DealStructureForm />} />
+            <Route path="/financing-details" element={<FinancingDetailsForm />} />
+            <Route path="/analysis-results" element={<AnalysisResultsView />} />
+          </Routes>
+          <Toaster />
+        </Router>
+      </SavedAnalysisProvider>
     </ErrorBoundary>
   );
 }
